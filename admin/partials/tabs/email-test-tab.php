@@ -53,6 +53,20 @@ $sendforce_provider_name = $sendforce_provider_data['label'] ?? 'Unknown';
 		</div>
 		<div class="sendforce-card-body">
 
+			<?php if ( ! empty( $sendforce_settings['simulation_mode'] ) ) : ?>
+				<?php /* Said up front, rather than only after the send is refused. */ ?>
+				<div class="sendforce-notice sendforce-notice-warning">
+					<span class="dashicons dashicons-hidden"></span>
+					<div>
+						<strong><?php esc_html_e( 'Simulation Mode is on', 'sendforce-mail-relay' ); ?></strong>
+						<p><?php esc_html_e( 'Emails are written to the log but never handed to your provider, so a test send cannot reach an inbox. Turn Simulation Mode off in Settings to send for real.', 'sendforce-mail-relay' ); ?></p>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=sendforce-mail-relay&tab=settings' ) ) . '#sendforce-simulation'; ?>" class="sendforce-btn sendforce-btn-primary sendforce-btn-sm">
+							<?php esc_html_e( 'Turn off Simulation Mode', 'sendforce-mail-relay' ); ?>
+						</a>
+					</div>
+				</div>
+			<?php endif; ?>
+
 			<?php if ( ! $sendforce_is_configured ) : ?>
 				<div class="sendforce-notice sendforce-notice-warning">
 					<span class="dashicons dashicons-warning"></span>

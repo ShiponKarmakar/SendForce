@@ -619,7 +619,8 @@ $sendforce_connections = array_values(
 					</div>
 
 					<!-- Email Simulation -->
-					<div class="sendforce-gs-section">
+					<?php /* id is the target of the header badge and the Email Test notice, so both land on the toggle rather than the top of this long page. */ ?>
+					<div class="sendforce-gs-section" id="sendforce-simulation">
 						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Email Simulation', 'sendforce-mail-relay' ); ?></p>
 						<label class="sendforce-toggle-label">
 							<input type="checkbox" name="sendforce_settings[simulation_mode]" value="1"

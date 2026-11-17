@@ -3,7 +3,7 @@
  * Plugin Name: SendForce Mail Relay
  * Plugin URI:  https://wordpress.org/plugins/sendforce-mail-relay/
  * Description: SMTP and email-API mailer for WordPress, with email logging, queue, retry, smart routing and failure alerts.
- * Version:     1.2.0
+ * Version:     1.2.1
  * Author:      Shipon Karmakar
  * Author URI:  https://profiles.wordpress.org/shiponkarmakar/
  * License:     GPL v2 or later
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin constants.
  */
-define( 'SENDFORCE_VERSION', '1.2.0' );
+define( 'SENDFORCE_VERSION', '1.2.1' );
 define( 'SENDFORCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SENDFORCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SENDFORCE_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );

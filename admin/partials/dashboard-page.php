@@ -59,8 +59,17 @@ $sendforce_nav_items = array(
 ?>
 <div class="sendforce-app">
 	<!-- Top Header Bar -->
+	<?php
+	// Simulation Mode is easy to switch on and then forget: mail stops leaving
+	// the site while every screen still looks normal, and the only hint was a
+	// toggle buried in Settings. Carry a standing badge in the header so the
+	// state is never silent. The flag also drives the narrow-width layout,
+	// which gives the badge its own row rather than letting the nav push it
+	// off screen.
+	$sendforce_sim_on = ! empty( get_option( 'sendforce_settings', array() )['simulation_mode'] );
+	?>
 	<header class="sendforce-topbar">
-		<div class="sendforce-topbar-inner">
+		<div class="sendforce-topbar-inner<?php echo $sendforce_sim_on ? ' has-sim' : ''; ?>">
 			<div class="sendforce-topbar-left">
 				<div class="sendforce-logo">
 					<img
@@ -83,6 +92,16 @@ $sendforce_nav_items = array(
 				</nav>
 			</div>
 			<div class="sendforce-topbar-right">
+				<?php if ( $sendforce_sim_on ) : ?>
+					<a
+						href="<?php echo esc_url( admin_url( 'admin.php?page=sendforce-mail-relay&tab=settings' ) ) . '#sendforce-simulation'; ?>"
+						class="sendforce-sim-badge"
+						title="<?php esc_attr_e( 'Simulation Mode is on — emails are logged but not sent. Click to open Settings.', 'sendforce-mail-relay' ); ?>"
+					>
+						<span class="dashicons dashicons-hidden" aria-hidden="true"></span>
+						<span><?php esc_html_e( 'Simulation Mode', 'sendforce-mail-relay' ); ?></span>
+					</a>
+				<?php endif; ?>
 				<span class="sendforce-version"><?php echo esc_html( 'v' . SENDFORCE_VERSION ); ?></span>
 			</div>
 		</div>

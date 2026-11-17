@@ -132,6 +132,7 @@
 .sendforce-topbar-right {
 	display: flex;
 	align-items: center;
+	gap: 8px;
 }
 
 .sendforce-logo {
@@ -263,6 +264,58 @@
 	padding: 3px 9px;
 	border-radius: 9999px;
 	letter-spacing: 0.02em;
+}
+
+/* Simulation Mode badge — amber, because nothing is actually being delivered
+   while it shows. Stays visible at every width (unlike the version pill):
+   it is the one piece of header state a user needs to see. */
+.sendforce-sim-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #FFD79A;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.42);
+	padding: 3px 10px;
+	border-radius: 9999px;
+	letter-spacing: 0.02em;
+	text-decoration: none;
+	line-height: 1.6;
+	flex-shrink: 0;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sendforce-sim-badge:hover,
+.sendforce-sim-badge:focus {
+	color: #FFE9C7;
+	background: rgba(245, 158, 11, 0.26);
+	box-shadow: none;
+}
+
+.sendforce-sim-badge .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	line-height: 14px;
+}
+
+@media screen and ( max-width: 600px ) {
+	/* Eight nav icons already fill this width, so the badge gets its own row
+	   above them instead of being pushed off the end of the bar. Only when
+	   the badge is present (`has-sim`): otherwise the right-hand group holds
+	   nothing visible and would add an empty strip. */
+	.sendforce-topbar-inner.has-sim {
+		flex-wrap: wrap;
+	}
+
+	.has-sim .sendforce-topbar-right {
+		order: -1;
+		width: 100%;
+		justify-content: flex-end;
+		padding: 6px 0 2px;
+	}
 }
 
 /* ========================================

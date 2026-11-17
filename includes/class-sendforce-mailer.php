@@ -583,7 +583,6 @@ class SendForce_Mailer {
 			$mailer->Port       = absint( $config['port'] ?? 587 ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$mailer->SMTPSecure = $config['encryption'] ?? 'tls'; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$mailer->Timeout    = 15; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$mailer->Exceptions = true; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 			if ( 'none' === ( $config['encryption'] ?? '' ) ) {
 				$mailer->SMTPSecure  = ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
@@ -695,7 +694,6 @@ class SendForce_Mailer {
 		$phpmailer->Port       = absint( $this->settings['port'] ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		$phpmailer->SMTPSecure = $this->settings['encryption']; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		$phpmailer->Timeout    = 15; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-		$phpmailer->Exceptions = true; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 		if ( 'none' === $this->settings['encryption'] ) {
 			$phpmailer->SMTPSecure  = ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
@@ -751,6 +749,21 @@ class SendForce_Mailer {
 	 * @param PHPMailer\PHPMailer\PHPMailer $phpmailer The PHPMailer instance.
 	 */
 	public function add_plain_text_alt( $phpmailer ) {
+		// HTML emails only. Setting an AltBody on a plain-text email turns it
+		// into multipart/alternative, and PHPMailer always labels the second
+		// part text/html — so the plain body was delivered as an HTML part and
+		// mail clients displayed it as HTML. That hit WordPress's own plain-text
+		// mail (password resets, notifications, the Email Test) on every SMTP
+		// and PHP Mail connection with this setting on. The API mailers already
+		// guarded on HTML in build_raw_mime(); this brings PHPMailer into line.
+		// Compare the media type only: wp_mail() copies whatever the
+		// wp_mail_content_type filter returns into ContentType unparsed, so
+		// "text/html; charset=UTF-8" is a real HTML email too.
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+		$media_type = strtolower( trim( explode( ';', (string) $phpmailer->ContentType )[0] ) );
+		if ( 'text/html' !== $media_type ) {
+			return;
+		}
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		if ( empty( $phpmailer->AltBody ) && ! empty( $phpmailer->Body ) ) {
 			$phpmailer->AltBody = wp_strip_all_tags( $phpmailer->Body ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
