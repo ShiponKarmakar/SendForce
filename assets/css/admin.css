@@ -3592,11 +3592,17 @@ textarea.sendforce-textarea {
 	border-bottom: 1px solid var(--sf-border);
 }
 
+/* Horizontal padding with a matching negative margin: the text stays
+   aligned with the card, but the focus ring and hover tint get room
+   instead of touching the fields below. */
 .sendforce-gs-summary {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 14px 0;
+	margin: 0 -10px;
+	padding: 12px 10px;
+	border-radius: var(--sf-radius-sm);
+	transition: background var(--sf-transition);
 	cursor: pointer;
 	list-style: none;
 	user-select: none;
@@ -3624,10 +3630,18 @@ textarea.sendforce-textarea {
 	margin-bottom: -3px;
 }
 
+.sendforce-gs-summary:hover {
+	background: var(--sf-border-light);
+}
+
+/* Keyboard focus only (not after a mouse click), drawn inside the header. */
+.sendforce-gs-summary:focus {
+	outline: none;
+}
+
 .sendforce-gs-summary:focus-visible {
 	outline: 2px solid var(--sf-primary);
-	outline-offset: 2px;
-	border-radius: var(--sf-radius-xs);
+	outline-offset: -2px;
 }
 
 .sendforce-gs-summary > .dashicons {
@@ -3690,8 +3704,9 @@ textarea.sendforce-textarea {
 	color: #92400E;
 }
 
+/* Full card width: no indent under the icon, so fields aren't squeezed. */
 .sendforce-gs-group-body {
-	padding: 0 0 6px 42px;
+	padding: 4px 0 14px;
 }
 
 .sendforce-gs-section {
@@ -3701,7 +3716,7 @@ textarea.sendforce-textarea {
 
 .sendforce-gs-group-body > .sendforce-gs-section:first-child {
 	border-top: none;
-	padding-top: 2px;
+	padding-top: 6px;
 }
 
 .sendforce-gs-section-title {
