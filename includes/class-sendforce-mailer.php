@@ -617,10 +617,14 @@ class SendForce_Mailer {
 			if ( ! is_array( $headers ) ) {
 				$headers = explode( "\n", str_replace( "\r\n", "\n", (string) $headers ) );
 			}
+			// HTML or not is decided the way wp_mail() decides it — header, then
+			// the wp_mail_content_type filter — so emails marked HTML only by
+			// that filter (e.g. Directorist) aren't sent as plain text.
+			if ( 'text/html' === self::resolve_content_type( $headers )['media'] ) {
+				$mailer->isHTML( true );
+			}
 			foreach ( $headers as $h ) {
-				if ( false !== stripos( $h, 'content-type' ) && false !== stripos( $h, 'text/html' ) ) {
-					$mailer->isHTML( true );
-				} elseif ( 0 === stripos( trim( $h ), 'cc:' ) ) {
+				if ( 0 === stripos( trim( $h ), 'cc:' ) ) {
 					foreach ( array_map( 'trim', explode( ',', trim( substr( trim( $h ), 3 ) ) ) ) as $cc ) {
 						if ( $cc ) {
 							$mailer->addCC( $cc ); }
@@ -741,6 +745,69 @@ class SendForce_Mailer {
 			$atts
 		) );
 		return true; // Return non-null to short-circuit wp_mail.
+	}
+
+	/**
+	 * Work out an email's content type exactly the way wp_mail() does: the
+	 * last Content-Type header (default text/plain), then the
+	 * `wp_mail_content_type` filter.
+	 *
+	 * The filter step matters. Plugins such as Directorist mark their emails
+	 * as HTML only through that filter, adding it just before wp_mail() and
+	 * removing it straight after, with no Content-Type header at all. Any send
+	 * path that reads only the headers (the API mailers, the inline fallback
+	 * mailer) or that sends later without the filter in place (the Email
+	 * Queue) would deliver such an email as plain text, so the recipient saw
+	 * raw HTML source. Call this while the original wp_mail() call is still
+	 * running, so the sender's filter is still attached.
+	 *
+	 * @param string|array $headers wp_mail() headers.
+	 * @return array {
+	 *   @type string $type      Filtered content type, as wp_mail() would set it (may carry parameters).
+	 *   @type string $media     Lower-cased media type of $type, e.g. "text/html".
+	 *   @type string $raw_media Lower-cased media type from the headers alone, before the filter.
+	 *   @type string $charset   Charset from the Content-Type header, or '' when none was given.
+	 * }
+	 */
+	public static function resolve_content_type( $headers ) {
+		$type    = '';
+		$charset = '';
+
+		if ( ! is_array( $headers ) ) {
+			$headers = explode( "\n", str_replace( "\r\n", "\n", (string) $headers ) );
+		}
+		foreach ( $headers as $header ) {
+			if ( false === strpos( (string) $header, ':' ) ) {
+				continue;
+			}
+			list( $name, $value ) = explode( ':', (string) $header, 2 );
+			if ( 'content-type' !== strtolower( trim( $name ) ) ) {
+				continue;
+			}
+			// Last header wins, as in wp_mail().
+			$parts   = explode( ';', $value );
+			$type    = trim( $parts[0] );
+			$charset = '';
+			foreach ( array_slice( $parts, 1 ) as $param ) {
+				if ( false !== stripos( $param, 'charset=' ) ) {
+					$charset = trim( str_ireplace( array( 'charset=', '"' ), '', $param ) );
+				}
+			}
+		}
+
+		if ( '' === $type ) {
+			$type = 'text/plain';
+		}
+		$raw_media = strtolower( $type );
+
+		$filtered = (string) apply_filters( 'wp_mail_content_type', $type ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
+
+		return array(
+			'type'      => $filtered,
+			'media'     => strtolower( trim( explode( ';', $filtered )[0] ) ),
+			'raw_media' => $raw_media,
+			'charset'   => $charset,
+		);
 	}
 
 	/**

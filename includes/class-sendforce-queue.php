@@ -170,6 +170,25 @@ class SendForce_Queue {
 		}
 
 		$headers = isset( $atts['headers'] ) ? $atts['headers'] : '';
+
+		// Freeze the content type now. Plugins like Directorist mark HTML only
+		// through the wp_mail_content_type filter, attached just for their
+		// wp_mail() call. The queue sends later, when that filter is gone, so
+		// without this the email went out as plain text and showed raw HTML.
+		// Appending is enough: wp_mail() and SendForce both use the last
+		// Content-Type header.
+		$content_type = SendForce_Mailer::resolve_content_type( $headers );
+		if ( $content_type['media'] !== $content_type['raw_media'] ) {
+			$frozen = $content_type['type'];
+			if ( false === stripos( $frozen, 'charset=' ) ) {
+				$frozen .= '; charset=' . ( '' !== $content_type['charset'] ? $content_type['charset'] : get_bloginfo( 'charset' ) );
+			}
+			if ( ! is_array( $headers ) ) {
+				$headers = '' === trim( (string) $headers ) ? array() : explode( "\n", str_replace( "\r\n", "\n", (string) $headers ) );
+			}
+			$headers[] = 'Content-Type: ' . $frozen;
+		}
+
 		if ( is_array( $headers ) ) {
 			$headers = implode( "\n", $headers );
 		}

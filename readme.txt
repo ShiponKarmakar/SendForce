@@ -4,7 +4,7 @@ Donate link: https://profiles.wordpress.org/shiponkarmakar/
 Tags: email, email log, gmail, outlook, smtp
 Requires at least: 5.9
 Tested up to: 7.1
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -379,6 +379,9 @@ We recommend adding a note to your site's privacy policy if you log email conten
 
 For the **complete** release history with full detail on every change, see the [full changelog on GitHub](https://github.com/ShiponKarmakar/SendForce/blob/main/CHANGELOG.md) (also bundled with the plugin as CHANGELOG.md) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
 
+= 1.2.2 =
+* Fixed: emails from plugins that mark HTML only through WordPress's `wp_mail_content_type` filter, such as Directorist, arrived as plain text showing raw HTML code when the Email Queue was on or an API provider was used. SendForce now decides between HTML and plain text exactly the way WordPress does. Thanks to @dimalifragis for the report.
+
 = 1.2.1 =
 * Fixed: with "Multi-Part Plain Text" turned on, plain-text emails (password resets, notifications, the test email) were delivered as HTML on SMTP and PHP Mail connections. The option now only applies to HTML emails, as intended. Thanks to @dimalifragis for the report.
 * Fixed: a PHP deprecation notice ("Creation of dynamic property WP_PHPMailer::$Exceptions") written to the debug log on every SMTP send on PHP 8.2 and later.
@@ -587,6 +590,9 @@ For the **complete** release history with full detail on every change, see the [
 * Initial release. SMTP with 18 provider presets. HTTP API for 12 providers (SendGrid, Mailgun, SES, Brevo, SparkPost, Postmark, Elastic Email, SMTP2GO, Pepipost, SMTP.com, SocketLabs, Moosend). From name/email override. Email logging with search/filter. Email queue with exponential backoff retry. Email Test page with live SMTP debug. AES-256-CBC encrypted credential storage. Auto log cleanup. Modern admin dashboard with 7-day send chart.
 
 == Upgrade Notice ==
+
+= 1.2.2 =
+Fixes emails from plugins like Directorist showing raw HTML code when the Email Queue is on or an API provider is used.
 
 = 1.2.1 =
 Fixes plain-text emails arriving as HTML when "Multi-Part Plain Text" is on (SMTP and PHP Mail). Also adds a Simulation Mode badge so a paused site is never silent.

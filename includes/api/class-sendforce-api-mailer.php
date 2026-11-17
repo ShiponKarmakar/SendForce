@@ -718,6 +718,14 @@ abstract class SendForce_API_Mailer {
 			'reply_to'     => '',
 		);
 
+		// HTML or not is decided the way wp_mail() decides it: the last
+		// Content-Type header, then the wp_mail_content_type filter. Plugins
+		// like Directorist mark HTML only through that filter, with no header,
+		// so reading the headers alone sent their emails as plain text.
+		if ( 'text/html' === SendForce_Mailer::resolve_content_type( $headers )['media'] ) {
+			$parsed['content_type'] = 'text/html';
+		}
+
 		if ( empty( $headers ) ) {
 			return $parsed;
 		}
@@ -736,11 +744,6 @@ abstract class SendForce_API_Mailer {
 			$value = trim( $value );
 
 			switch ( $name ) {
-				case 'content-type':
-					if ( false !== strpos( $value, 'text/html' ) ) {
-						$parsed['content_type'] = 'text/html';
-					}
-					break;
 				case 'cc':
 					$parsed['cc'] = array_merge( $parsed['cc'], array_map( 'trim', explode( ',', $value ) ) );
 					break;

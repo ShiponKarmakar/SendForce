@@ -11,7 +11,13 @@ Every release, in full detail.
 > [!NOTE]
 > WordPress.org shows a shorter version of this history, because its readme changelog is capped at 5,000 words. Nothing is cut here. The **What's New** tab inside SendForce reads this same file, so you can browse it without leaving WordPress.
 
-**Jump to:** [1.2.1](#121) · [1.2.0](#120) · [1.1.3](#113) · [1.1.2](#112) · [1.1.1](#111) · [1.1.0](#110) · [1.0.x releases](#earlier-releases-10x)
+**Jump to:** [1.2.2](#122) · [1.2.1](#121) · [1.2.0](#120) · [1.1.3](#113) · [1.1.2](#112) · [1.1.1](#111) · [1.1.0](#110) · [1.0.x releases](#earlier-releases-10x)
+
+## 1.2.2
+
+<sub>Not released yet</sub>
+
+* **Fixed — emails from Directorist (and plugins like it) arrived as raw HTML.** WordPress lets a plugin mark an email as HTML in two ways: a `Content-Type: text/html` header, or the `wp_mail_content_type` filter. Directorist uses only the filter, adding it just before `wp_mail()` and removing it straight after. Three SendForce paths missed it. The **Email Queue** saved only the headers and sent the email later, after the filter was gone. The **API mailers** and the **inline fallback mailer** read only the headers and never asked the filter. In all three the email went out as `text/plain`, so the recipient saw the HTML source. SendForce now works out the content type exactly as `wp_mail()` does (last Content-Type header, then the filter) through one shared helper, `SendForce_Mailer::resolve_content_type()`. The queue freezes the result into the stored headers, so a queued email keeps its format. Plain emails and emails that already send a header are unchanged. Reproduced on 1.2.1 with a Directorist-style send (PHP Mail with the queue, SendGrid, Brevo) and verified fixed on PHP Mail, SMTP, SendGrid and Brevo, with and without the queue. Reported on the support forum by @dimalifragis.
 
 ## 1.2.1
 
