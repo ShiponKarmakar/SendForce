@@ -667,10 +667,10 @@ $sendforce_connections = array_values(
 								if ( ! $sendforce_gs_log_on ) {
 									esc_html_e( 'Off', 'sendforce-mail-relay' );
 								} elseif ( 0 === $sendforce_gs_retention ) {
-									esc_html_e( 'On · kept', 'sendforce-mail-relay' );
+									esc_html_e( 'On · kept forever', 'sendforce-mail-relay' );
 								} else {
 									/* translators: %d: number of days logs are kept */
-									echo esc_html( sprintf( __( 'On · %d days', 'sendforce-mail-relay' ), $sendforce_gs_retention ) );
+									echo esc_html( sprintf( _n( 'On · %d day', 'On · %d days', $sendforce_gs_retention, 'sendforce-mail-relay' ), $sendforce_gs_retention ) );
 								}
 								?>
 							</span>
@@ -729,7 +729,7 @@ $sendforce_connections = array_values(
 									esc_html_e( 'On · every min', 'sendforce-mail-relay' );
 								} else {
 									/* translators: %d: minutes between queue runs */
-									echo esc_html( sprintf( __( 'On · every %d min', 'sendforce-mail-relay' ), $sendforce_queue_interval ) );
+									echo esc_html( sprintf( _n( 'On · every %d min', 'On · every %d min', $sendforce_queue_interval, 'sendforce-mail-relay' ), $sendforce_queue_interval ) );
 								}
 								?>
 							</span>

@@ -250,7 +250,8 @@ class SendForce_Queue {
 			if ( ! is_array( $headers ) ) {
 				$headers = '' === trim( (string) $headers ) ? array() : explode( "\n", str_replace( "\r\n", "\n", (string) $headers ) );
 			}
-			$headers[] = 'Content-Type: ' . $frozen;
+			// The value comes from filter code; never let it add a header line.
+			$headers[] = 'Content-Type: ' . str_replace( array( "\r", "\n" ), '', $frozen );
 		}
 
 		if ( is_array( $headers ) ) {

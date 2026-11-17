@@ -268,8 +268,8 @@ $sendforce_changelog_inline = sendforce_parse_changelog();
 			<h2><?php esc_html_e( 'Changelog', 'sendforce-mail-relay' ); ?></h2>
 			<p class="sendforce-text-muted">
 				<?php
-				/* translators: %d: total number of release entries */
 				echo esc_html( sprintf(
+					/* translators: %d: total number of release entries */
 					_n( '%d release shipped so far. Click any version to see what changed.', '%d releases shipped so far. Click any version to see what changed.', count( $sendforce_changelog_inline ), 'sendforce-mail-relay' ),
 					count( $sendforce_changelog_inline )
 				) );

@@ -231,10 +231,10 @@ $sendforce_export_base = wp_nonce_url(
 					>
 						<option value=""><?php esc_html_e( 'All connections', 'sendforce-mail-relay' ); ?></option>
 						<?php foreach ( $sendforce_log_providers as $sendforce_p ) :
-							$label = $sendforce_provider_labels[ $sendforce_p ] ?? ucfirst( $sendforce_p );
+							$sendforce_label = $sendforce_provider_labels[ $sendforce_p ] ?? ucfirst( $sendforce_p );
 							?>
 							<option value="<?php echo esc_attr( $sendforce_p ); ?>" <?php selected( $sendforce_provider, $sendforce_p ); ?>>
-								<?php echo esc_html( $label ); ?>
+								<?php echo esc_html( $sendforce_label ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
