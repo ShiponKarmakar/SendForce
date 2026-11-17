@@ -15,7 +15,7 @@ Every release, in full detail.
 
 ## 1.2.1
 
-<sub>Not released yet</sub>
+<sub>Released 17 November 2026</sub>
 
 * **Fixed — plain-text emails arrived as HTML when "Multi-Part Plain Text" was on.** The setting is meant to add a plain-text version to HTML emails, but on SMTP and PHP Mail connections it was applied to every email. Giving a plain-text message an alternative body makes PHPMailer build `multipart/alternative`, and PHPMailer always labels that second part `text/html` — so the plain body went out declared as HTML, and mail clients displayed it that way. That covered most of WordPress's own mail: password resets, new-user and admin notifications, and the Email Test, which sends plain text. The option now only acts on emails that are actually HTML. The API mailers were unaffected; they already checked. Reported on the support forum by @dimalifragis.
 * **Fixed — a PHP deprecation notice on every SMTP send.** Two places set `$phpmailer->Exceptions = true`, but PHPMailer has no such property — its switch is a protected `$exceptions`, set only through the constructor. The assignment never did anything; on PHP 8.2 and later it instead logged "Creation of dynamic property WP_PHPMailer::$Exceptions is deprecated" once per email, and PHP 9 will make it a fatal error. Both mailers were already created with exceptions on, so the lines are simply removed and nothing about sending changes. Verified that a failed SMTP send still returns `false` and still reports the real connection error.
