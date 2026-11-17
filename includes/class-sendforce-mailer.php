@@ -853,18 +853,10 @@ class SendForce_Mailer {
 		// The `display` value is only ever shown in admin debug tools (WP
 		// Crontrol, wp-cli cron list, etc.) — not user-facing — so leaving
 		// it untranslated is harmless.
-		// The queue runs every minute while the Email Queue is enabled (1.1.0+),
-		// and every 5 minutes while it is disabled (see
-		// SendForce_Queue::desired_schedule), so both schedules are registered.
-		$schedules['sendforce_every_minute']    = array(
-			'interval' => MINUTE_IN_SECONDS,
-			'display'  => 'Every Minute (SendForce Mail Relay)',
-		);
-		$schedules['sendforce_every_5_minutes'] = array(
-			'interval' => 300,
-			'display'  => 'Every 5 Minutes (SendForce Mail Relay)',
-		);
-		return $schedules;
+		// Every interval the Email Queue can run at (chosen in Settings; see
+		// SendForce_Queue::desired_schedule) is registered, so switching the
+		// setting never points the event at an unknown schedule.
+		return SendForce_Queue::register_schedules( $schedules );
 	}
 
 	/**

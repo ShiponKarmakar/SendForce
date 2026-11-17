@@ -446,7 +446,7 @@ $sendforce_connections = array_values(
 				<div class="sendforce-field" style="margin-top:20px;">
 					<label for="sf-conn-rate-limit" class="sendforce-label"><?php esc_html_e( 'Max emails per minute', 'sendforce-mail-relay' ); ?></label>
 					<input type="number" id="sf-conn-rate-limit" class="sendforce-input" style="max-width:160px;" min="0" max="10000" step="1" value="0" />
-					<span class="sendforce-help"><?php esc_html_e( 'Paces how fast the Email Queue sends through this connection — useful for providers with strict rate limits, such as the Gmail API. 0 = no limit. Only applies when the Email Queue is enabled; emails sent immediately are not paced.', 'sendforce-mail-relay' ); ?></span>
+					<span class="sendforce-help"><?php esc_html_e( 'Paces how fast the Email Queue sends through this connection — useful for providers with strict rate limits, such as the Gmail API. 0 = no limit. Only applies when the Email Queue is enabled; emails sent immediately are not paced. A queue run takes under a minute, so this is also the most one run sends through this connection.', 'sendforce-mail-relay' ); ?></span>
 				</div>
 
 				<!-- Save / Cancel buttons -->
@@ -652,9 +652,27 @@ $sendforce_connections = array_values(
 							<span class="sendforce-toggle"></span>
 							<span><?php esc_html_e( 'Enable Email Queue', 'sendforce-mail-relay' ); ?></span>
 						</label>
-						<label class="sendforce-label" style="margin-top:10px;display:block;"><?php esc_html_e( 'Batch Size', 'sendforce-mail-relay' ); ?></label>
+						<?php $sendforce_queue_interval = SendForce_Queue::interval_minutes( $sendforce_settings ); ?>
+						<label class="sendforce-label" for="sendforce-queue-interval" style="margin-top:10px;display:block;"><?php esc_html_e( 'Send Interval', 'sendforce-mail-relay' ); ?></label>
+						<select id="sendforce-queue-interval" name="sendforce_settings[queue_interval]" class="sendforce-select">
+							<?php foreach ( SendForce_Queue::allowed_intervals() as $sendforce_minutes ) : ?>
+								<option value="<?php echo esc_attr( $sendforce_minutes ); ?>" <?php selected( $sendforce_queue_interval, $sendforce_minutes ); ?>>
+									<?php
+									echo esc_html(
+										1 === $sendforce_minutes
+											? __( 'Every minute', 'sendforce-mail-relay' )
+											/* translators: %d: number of minutes (5 or more) */
+											: sprintf( _n( 'Every %d minute', 'Every %d minutes', $sendforce_minutes, 'sendforce-mail-relay' ), $sendforce_minutes )
+									);
+									?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<span class="sendforce-help"><?php esc_html_e( 'How often queued emails are sent. A longer interval sends in fewer, larger runs, so emails wait longer before they go out.', 'sendforce-mail-relay' ); ?></span>
+
+						<label class="sendforce-label" style="margin-top:14px;display:block;"><?php esc_html_e( 'Batch Size', 'sendforce-mail-relay' ); ?></label>
 						<input type="number" name="sendforce_settings[batch_size]" value="<?php echo esc_attr( $sendforce_settings['batch_size'] ?? 50 ); ?>" class="sendforce-input" min="1" max="500" />
-						<span class="sendforce-help"><?php esc_html_e( 'Emails per cron run.', 'sendforce-mail-relay' ); ?></span>
+						<span class="sendforce-help"><?php esc_html_e( 'The most emails sent in one run. With a longer interval, raise this so your queue keeps up.', 'sendforce-mail-relay' ); ?></span>
 
 						<label class="sendforce-label" style="margin-top:14px;display:block;"><?php esc_html_e( 'Max Retry Attempts', 'sendforce-mail-relay' ); ?></label>
 						<input type="number" name="sendforce_settings[max_attempts]" value="<?php echo esc_attr( $sendforce_settings['max_attempts'] ?? 3 ); ?>" class="sendforce-input" min="1" max="10" />

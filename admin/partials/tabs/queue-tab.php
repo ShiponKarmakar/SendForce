@@ -67,11 +67,19 @@ $sendforce_next_cron_ts  = wp_next_scheduled( 'sendforce_process_queue' );
 	<p class="sendforce-text-muted" style="margin:0 0 12px;font-size:13px;">
 		<span class="dashicons dashicons-clock" style="font-size:14px;vertical-align:text-bottom;"></span>
 		<?php
-		echo esc_html( sprintf(
-			/* translators: %s: human-readable next-run time */
-			__( 'Next automatic run: %s (every minute via WP-Cron).', 'sendforce-mail-relay' ),
-			wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $sendforce_next_cron_ts )
-		) );
+		$sendforce_interval = SendForce_Queue::interval_minutes();
+		$sendforce_when     = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $sendforce_next_cron_ts );
+		echo esc_html(
+			1 === $sendforce_interval
+				/* translators: %s: human-readable next-run time */
+				? sprintf( __( 'Next automatic run: %s (every minute via WP-Cron).', 'sendforce-mail-relay' ), $sendforce_when )
+				: sprintf(
+					/* translators: 1: human-readable next-run time, 2: number of minutes between runs */
+					_n( 'Next automatic run: %1$s (every %2$d minute via WP-Cron).', 'Next automatic run: %1$s (every %2$d minutes via WP-Cron).', $sendforce_interval, 'sendforce-mail-relay' ),
+					$sendforce_when,
+					$sendforce_interval
+				)
+		);
 		?>
 	</p>
 <?php endif; ?>

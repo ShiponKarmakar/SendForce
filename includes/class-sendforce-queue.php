@@ -64,11 +64,73 @@ class SendForce_Queue {
 	}
 
 	/**
+	 * Run intervals an admin can pick for the Email Queue, in minutes.
+	 * The single source for the setting's sanitizer, the Settings dropdown
+	 * and the WP-Cron schedules below.
+	 *
+	 * @return int[]
+	 */
+	public static function allowed_intervals() {
+		return array( 1, 5, 10, 15, 30 );
+	}
+
+	/**
+	 * The admin's chosen queue interval in minutes (default 1). Anything not
+	 * in allowed_intervals() falls back to 1.
+	 *
+	 * @param array|null $settings sendforce_settings, or null to read the option.
+	 * @return int
+	 */
+	public static function interval_minutes( $settings = null ) {
+		if ( null === $settings ) {
+			$settings = get_option( 'sendforce_settings', array() );
+		}
+		$minutes = (int) ( $settings['queue_interval'] ?? 1 ); // (int), not absint(): "-5" must not become 5.
+		return in_array( $minutes, self::allowed_intervals(), true ) ? $minutes : 1;
+	}
+
+	/**
+	 * WP-Cron schedule name for an interval, e.g. 10 → sendforce_every_10_minutes.
+	 * 1 keeps its original name (sendforce_every_minute) so existing events
+	 * aren't needlessly rescheduled on update.
+	 *
+	 * @param int $minutes Interval in minutes.
+	 * @return string
+	 */
+	public static function schedule_name( $minutes ) {
+		return 1 === (int) $minutes ? 'sendforce_every_minute' : 'sendforce_every_' . (int) $minutes . '_minutes';
+	}
+
+	/**
+	 * Add every queue schedule to WP-Cron's list. Used by the cron_schedules
+	 * filter in both the mailer and the activator.
+	 *
+	 * The display labels are deliberately literal English: cron_schedules can
+	 * fire before the textdomain loads, and calling __() then triggers WP 6.7+'s
+	 * early-translation notice. They only appear in debug tools (WP Crontrol,
+	 * wp cron event list), never in SendForce's own screens.
+	 *
+	 * @param array $schedules Existing schedules.
+	 * @return array
+	 */
+	public static function register_schedules( $schedules ) {
+		foreach ( self::allowed_intervals() as $minutes ) {
+			$schedules[ self::schedule_name( $minutes ) ] = array(
+				'interval' => $minutes * MINUTE_IN_SECONDS,
+				'display'  => 1 === $minutes
+					? 'Every Minute (SendForce Mail Relay)'
+					: 'Every ' . $minutes . ' Minutes (SendForce Mail Relay)',
+			);
+		}
+		return $schedules;
+	}
+
+	/**
 	 * Recurrence the queue processor should use right now.
 	 *
-	 * Every minute while the Email Queue is enabled, so per-connection "max
-	 * emails per minute" limits pace sends smoothly. Every 5 minutes while it
-	 * is disabled — still enough to drain rows left over from when it was on,
+	 * While the Email Queue is enabled: the interval the admin chose in
+	 * Settings (every minute by default). While it is disabled: every 5
+	 * minutes — still enough to drain rows left over from when it was on,
 	 * without making every site spawn WP-Cron's background request once a
 	 * minute just for a feature most sites don't use.
 	 *
@@ -76,7 +138,9 @@ class SendForce_Queue {
 	 */
 	public static function desired_schedule() {
 		$settings = get_option( 'sendforce_settings', array() );
-		return ! empty( $settings['queue_enabled'] ) ? 'sendforce_every_minute' : 'sendforce_every_5_minutes';
+		return ! empty( $settings['queue_enabled'] )
+			? self::schedule_name( self::interval_minutes( $settings ) )
+			: 'sendforce_every_5_minutes';
 	}
 
 	/**

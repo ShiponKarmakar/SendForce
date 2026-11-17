@@ -111,7 +111,7 @@ Yes. All credentials are encrypted using AES-256-CBC encryption before being sto
 
 = What does the email queue do? =
 
-When enabled, emails are stored in a database queue instead of being sent immediately. A WP-Cron job processes the queue every minute, sending emails in batches; each run stops after about 20 seconds so it stays within typical host PHP time limits. You can also set a "Max emails per minute" on each connection to pace sending for providers with strict rate limits, such as the Gmail API. Failed emails are retried with exponential backoff (5 min → 15 min → 45 min).
+When enabled, emails are stored in a database queue instead of being sent immediately. A WP-Cron job processes the queue every minute by default (you can choose every 1, 5, 10, 15 or 30 minutes in Settings), sending emails in batches; each run stops after about 20 seconds so it stays within typical host PHP time limits. You can also set a "Max emails per minute" on each connection to pace sending for providers with strict rate limits, such as the Gmail API. Failed emails are retried with exponential backoff (5 min → 15 min → 45 min).
 
 Tip: WP-Cron only runs when your site receives visits, so on low-traffic sites the queue can lag. For reliable timing, disable WP-Cron and trigger it from a real server cron job every minute.
 
@@ -380,6 +380,7 @@ We recommend adding a note to your site's privacy policy if you log email conten
 For the **complete** release history with full detail on every change, see the [full changelog on GitHub](https://github.com/ShiponKarmakar/SendForce/blob/main/CHANGELOG.md) (also bundled with the plugin as CHANGELOG.md) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
 
 = 1.2.2 =
+* New: choose how often the Email Queue sends: every 1, 5, 10, 15 or 30 minutes (Settings → Email Queue → Send Interval). Every minute stays the default. Thanks to @dimalifragis for the suggestion.
 * Fixed: emails from plugins that mark HTML only through WordPress's `wp_mail_content_type` filter, such as Directorist, arrived as plain text showing raw HTML code when the Email Queue was on or an API provider was used. SendForce now decides between HTML and plain text exactly the way WordPress does. Thanks to @dimalifragis for the report.
 
 = 1.2.1 =
@@ -592,7 +593,7 @@ For the **complete** release history with full detail on every change, see the [
 == Upgrade Notice ==
 
 = 1.2.2 =
-Fixes emails from plugins like Directorist showing raw HTML code when the Email Queue is on or an API provider is used.
+Fixes emails from plugins like Directorist showing raw HTML code when the Email Queue is on or an API provider is used. Adds a choice of Email Queue send interval.
 
 = 1.2.1 =
 Fixes plain-text emails arriving as HTML when "Multi-Part Plain Text" is on (SMTP and PHP Mail). Also adds a Simulation Mode badge so a paused site is never silent.

@@ -1120,6 +1120,8 @@ class SendForce_Admin {
 		// or hand-crafted POST cannot persist out-of-bounds values.
 		$sanitized['queue_enabled'] = ! empty( $input['queue_enabled'] );
 		$sanitized['batch_size']    = max( 1, min( 500, absint( $input['batch_size'] ?? 50 ) ) );
+		// Run interval in minutes: one of SendForce_Queue::allowed_intervals(), else 1.
+		$sanitized['queue_interval'] = SendForce_Queue::interval_minutes( $input );
 		$sanitized['max_attempts']  = max( 1, min( 10, absint( $input['max_attempts'] ?? 3 ) ) );
 
 		// Developer debugging.

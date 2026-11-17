@@ -177,6 +177,7 @@ class SendForce_Activator {
 			'log_enabled'         => true,
 			'queue_enabled'       => false,
 			'batch_size'          => 50,
+			'queue_interval'      => 1,
 			'log_retention_days'  => 30,
 			'log_email_body'      => true,
 		);
@@ -218,15 +219,7 @@ class SendForce_Activator {
 		// Literal string — see add_cron_schedule() in class-sendforce-mailer.php
 		// for the rationale (cron_schedules filter fires before init, calling
 		// __() here triggers WP 6.7+'s early-translation notice).
-		$schedules['sendforce_every_minute']    = array(
-			'interval' => MINUTE_IN_SECONDS,
-			'display'  => 'Every Minute (SendForce Mail Relay)',
-		);
-		$schedules['sendforce_every_5_minutes'] = array(
-			'interval' => 300,
-			'display'  => 'Every 5 Minutes (SendForce Mail Relay)',
-		);
-		return $schedules;
+		return SendForce_Queue::register_schedules( $schedules );
 	}
 
 	/**
