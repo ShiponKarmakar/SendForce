@@ -472,7 +472,8 @@
 				action:          'sendforce_save_connection',
 				nonce:           sendForce.nonce,
 				conn_id:         $( '#sf-conn-id' ).val(),
-				label:           $( '#sf-conn-label' ).val(),
+				save_key:        sfConnSaveKey,
+				label:          $( '#sf-conn-label' ).val(),
 				provider:        $( '#sf-conn-provider' ).val(),
 				connection_type: $( '#sf-conn-type' ).val(),
 				host:            $( '#sf-conn-host' ).val(),
@@ -500,6 +501,10 @@
 
 				if ( response.success ) {
 					var conn = response.data;
+
+					// The form now edits the saved connection, so clicking
+					// Save again updates it rather than adding a copy.
+					$( '#sf-conn-id' ).val( conn.id );
 
 					// If this was the very first connection, reload to build the table.
 					if ( ! $( '#sendforce-connections-card' ).length ) {
@@ -585,8 +590,26 @@
 			});
 		});
 
+		// ----- One-time key for a new connection -----
+		// Sent with every save from this form. The server derives a new
+		// connection's ID from it, so a repeated request can't add a copy.
+		// A fresh key each time the form opens keeps separate connections apart.
+		var sfConnSaveKey = sfConnNewSaveKey();
+		function sfConnNewSaveKey() {
+			var bytes = new Uint8Array( 16 );
+			if ( window.crypto && window.crypto.getRandomValues ) {
+				window.crypto.getRandomValues( bytes );
+			} else {
+				for ( var i = 0; i < 16; i++ ) { bytes[ i ] = Math.floor( Math.random() * 256 ); }
+			}
+			return Array.prototype.map.call( bytes, function( b ) {
+				return ( '0' + b.toString( 16 ) ).slice( -2 );
+			} ).join( '' );
+		}
+
 		// ----- Helper: reset connection form to defaults -----
 		function sfConnFormReset() {
+			sfConnSaveKey = sfConnNewSaveKey();
 			$( '#sf-conn-id' ).val( '' );
 			$( '#sf-conn-label' ).val( '' );
 			$( '#sf-conn-provider' ).val( 'other' );

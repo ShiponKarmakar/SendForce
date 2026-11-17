@@ -2040,7 +2040,24 @@ class SendForce_Admin {
 		$conn_id     = sanitize_text_field( wp_unslash( $_POST['conn_id'] ?? '' ) );
 		$connections = get_option( 'sendforce_connections', array() );
 
-		$raw_conn_type   = sanitize_text_field( wp_unslash( $_POST['connection_type'] ?? 'smtp' ) );
+		// A new connection's ID comes from a one-time key the form creates
+		// when it opens, so the same request arriving twice (a double click,
+		// a browser retry, or Save clicked again after a "Request failed"
+		// that did save) updates the connection it already made instead of
+		// adding a second one. Without a key (an older cached script) a
+		// random ID is used, as before.
+		$save_key = sanitize_key( wp_unslash( $_POST['save_key'] ?? '' ) );
+		$keyed_id = strlen( $save_key ) >= 16 ? 'conn_' . substr( md5( get_current_user_id() . '|' . $save_key ), 0, 12 ) : '';
+		if ( '' === $conn_id && '' !== $keyed_id ) {
+			foreach ( $connections as $existing ) {
+				if ( isset( $existing['id'] ) && $existing['id'] === $keyed_id ) {
+					$conn_id = $keyed_id;
+					break;
+				}
+			}
+		}
+
+		$raw_conn_type  = sanitize_text_field( wp_unslash( $_POST['connection_type'] ?? 'smtp' ) );
 		$raw_encryption  = sanitize_text_field( wp_unslash( $_POST['encryption'] ?? 'tls' ) );
 		$raw_mg_region   = sanitize_text_field( wp_unslash( $_POST['mailgun_region'] ?? 'us' ) );
 		$raw_ses_region  = sanitize_text_field( wp_unslash( $_POST['ses_region'] ?? 'us-east-1' ) );
@@ -2105,7 +2122,7 @@ class SendForce_Admin {
 
 		if ( empty( $conn_id ) ) {
 			// New connection.
-			$data['id']          = 'conn_' . substr( md5( uniqid( '', true ) ), 0, 12 );
+			$data['id']          = '' !== $keyed_id ? $keyed_id : 'conn_' . substr( md5( uniqid( '', true ) ), 0, 12 );
 			$data['password']    = ! empty( $new_password ) ? SendForce_Mailer::encrypt_password( $new_password ) : '';
 			$data['api_key']     = ! empty( $new_api_key ) ? SendForce_Mailer::encrypt_password( $new_api_key ) : '';
 			$data['oauth_email'] = '';

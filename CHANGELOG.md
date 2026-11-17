@@ -11,7 +11,14 @@ Every release, in full detail.
 > [!NOTE]
 > WordPress.org shows a shorter version of this history, because its readme changelog is capped at 5,000 words. Nothing is cut here. The **What's New** tab inside SendForce reads this same file, so you can browse it without leaving WordPress.
 
-**Jump to:** [1.2.2](#122) · [1.2.1](#121) · [1.2.0](#120) · [1.1.3](#113) · [1.1.2](#112) · [1.1.1](#111) · [1.1.0](#110) · [1.0.x releases](#earlier-releases-10x)
+**Jump to:** [1.2.3](#123) · [1.2.2](#122) · [1.2.1](#121) · [1.2.0](#120) · [1.1.3](#113) · [1.1.2](#112) · [1.1.1](#111) · [1.1.0](#110) · [1.0.x releases](#earlier-releases-10x)
+
+## 1.2.3
+
+<sub>Not released yet</sub>
+
+* **Fixed — saving a new connection could create it twice.** Adding a connection is one request to the server, and nothing stopped that same request from arriving twice: a browser retrying a slow request, or clicking **Save Connection** again after a "Request failed" message when the first save had in fact gone through. Each copy added its own connection, so you ended up with two identical entries. The form now creates a one-time key whenever it opens for a new connection, and the server derives the new connection's ID from that key. A repeated request finds the connection it already made and updates it instead of adding another. After a successful save the form also switches to editing the saved connection, so pressing Save again updates it. Opening **Add Connection** again starts a new key, so separate connections stay separate. An older cached copy of the admin script that sends no key behaves exactly as before. Verified on a throwaway site: the same save sent twice, five identical saves at the same moment, a second Save after success, and a third connection added afterwards all gave the expected count.
+* **Changed — the WordPress.org readme changelog is shorter.** It was close to WordPress.org's 5,000-word limit. The 1.0.x releases now appear there as one summary entry, and upgrade notices older than 1.0.40 are gone; WordPress only shows the notice for the version being installed. Nothing is lost: every entry is still here in full and in the What's New tab.
 
 ## 1.2.2
 
