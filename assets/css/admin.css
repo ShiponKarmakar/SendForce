@@ -3576,36 +3576,165 @@ textarea.sendforce-textarea {
 	min-width: 0;
 }
 
+/* Not sticky: the General Settings card can be taller than the window,
+   and a sticky element taller than the viewport hides its own bottom
+   (the later settings and the Save button) until the page ends. */
 .sendforce-settings-sidebar {
-	position: sticky;
-	top: 32px;
+	min-width: 0;
 }
 
-/* General Settings card sections */
-.sendforce-gs-section {
-	padding: 16px 0;
+/* General Settings: four collapsible groups (native <details>). */
+.sendforce-gs-card .sendforce-card-body {
+	padding-top: 8px;
+}
+
+.sendforce-gs-group {
 	border-bottom: 1px solid var(--sf-border);
 }
 
-.sendforce-gs-section:first-child {
-	padding-top: 0;
+.sendforce-gs-summary {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 0;
+	cursor: pointer;
+	list-style: none;
+	user-select: none;
 }
 
-.sendforce-gs-section:last-of-type {
-	border-bottom: none;
+.sendforce-gs-summary::-webkit-details-marker {
+	display: none;
+}
+
+/* Chevron after the state chip. */
+.sendforce-gs-summary::after {
+	content: "";
+	flex: 0 0 auto;
+	width: 7px;
+	height: 7px;
+	margin: 0 4px 3px 2px;
+	border-right: 2px solid var(--sf-text-muted);
+	border-bottom: 2px solid var(--sf-text-muted);
+	transform: rotate(45deg);
+	transition: transform var(--sf-transition);
+}
+
+.sendforce-gs-group[open] > .sendforce-gs-summary::after {
+	transform: rotate(-135deg);
+	margin-bottom: -3px;
+}
+
+.sendforce-gs-summary:focus-visible {
+	outline: 2px solid var(--sf-primary);
+	outline-offset: 2px;
+	border-radius: var(--sf-radius-xs);
+}
+
+.sendforce-gs-summary > .dashicons {
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	line-height: 32px;
+	font-size: 17px;
+	text-align: center;
+	border-radius: var(--sf-radius-sm);
+	background: var(--sf-primary-light);
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-gs-summary-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.sendforce-gs-summary-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--sf-text);
+}
+
+.sendforce-gs-summary-desc {
+	font-size: 12px;
+	line-height: 1.35;
+	color: var(--sf-text-secondary);
+}
+
+/* Current state of the group, readable while it is closed. */
+/* The chip keeps its width (the description wraps instead); only a very
+   long connection label is cut short. */
+.sendforce-gs-state {
+	flex: 0 0 auto;
+	max-width: 120px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	padding: 5px 8px;
+	border-radius: 999px;
+	background: var(--sf-primary-light);
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-gs-state.is-off {
+	background: var(--sf-border-light);
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-gs-state.is-warn {
+	background: var(--sf-warning-light);
+	color: #92400E;
+}
+
+.sendforce-gs-group-body {
+	padding: 0 0 6px 42px;
+}
+
+.sendforce-gs-section {
+	padding: 12px 0;
+	border-top: 1px solid var(--sf-border-light);
+}
+
+.sendforce-gs-group-body > .sendforce-gs-section:first-child {
+	border-top: none;
+	padding-top: 2px;
 }
 
 .sendforce-gs-section-title {
+	display: block;
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--sf-text);
-	margin: 0 0 10px;
+	margin: 0 0 8px;
 }
 
-.sendforce-gs-divider {
-	border: none;
-	border-top: 2px solid var(--sf-border);
-	margin: 4px 0;
+.sendforce-gs-section .sendforce-input {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.sendforce-gs-save {
+	margin-top: 18px;
+}
+
+/* Briefly highlight a setting reached through a link (#sendforce-simulation). */
+.sendforce-gs-section.is-target {
+	animation: sendforce-gs-flash 1.6s ease-out;
+	border-radius: var(--sf-radius-xs);
+}
+
+@keyframes sendforce-gs-flash {
+	0%, 30% { background: var(--sf-warning-light); box-shadow: 0 0 0 8px var(--sf-warning-light); }
+	100% { background: transparent; box-shadow: 0 0 0 8px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sendforce-gs-summary::after { transition: none; }
+	.sendforce-gs-section.is-target { animation: none; }
 }
 
 .sendforce-select-full {
@@ -3615,9 +3744,6 @@ textarea.sendforce-textarea {
 @media screen and (max-width: 1100px) {
 	.sendforce-settings-columns {
 		grid-template-columns: 1fr;
-	}
-	.sendforce-settings-sidebar {
-		position: static;
 	}
 }
 

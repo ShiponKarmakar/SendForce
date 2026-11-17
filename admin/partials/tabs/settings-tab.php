@@ -550,161 +550,265 @@ $sendforce_connections = array_values(
 		<form id="sendforce-general-form" method="post" action="options.php" class="sendforce-settings-form">
 			<?php settings_fields( 'sendforce_settings_group' ); ?>
 
-			<div class="sendforce-card">
+			<?php
+			// Grouped into four collapsible sections so every setting is findable
+			// from the header row alone; each header shows the group's current
+			// state. Native <details>, so it works without JS. Field names are
+			// unchanged — this is one options.php form, as before.
+			$sendforce_conn_label = static function ( $sendforce_id ) use ( $sendforce_connections ) {
+				foreach ( $sendforce_connections as $sendforce_c ) {
+					if ( ( $sendforce_c['id'] ?? '' ) === $sendforce_id ) {
+						$sendforce_p = SendForce_Providers::get_provider( $sendforce_c['provider'] ?? 'other' );
+						return ! empty( $sendforce_c['label'] ) ? $sendforce_c['label'] : ( $sendforce_p['label'] ?? '' );
+					}
+				}
+				return '';
+			};
+			$sendforce_gs_sim       = ! empty( $sendforce_settings['simulation_mode'] );
+			$sendforce_gs_primary   = '' !== $sendforce_default_connection ? $sendforce_conn_label( $sendforce_default_connection ) : '';
+			$sendforce_gs_log_on    = (bool) ( $sendforce_settings['log_enabled'] ?? true );
+			$sendforce_gs_retention = absint( $sendforce_settings['log_retention_days'] ?? 30 );
+			$sendforce_gs_queue_on  = ! empty( $sendforce_settings['queue_enabled'] );
+			$sendforce_queue_interval = SendForce_Queue::interval_minutes( $sendforce_settings );
+			$sendforce_gs_debug_on  = ! empty( $sendforce_settings['developer_debug'] );
+			?>
+			<div class="sendforce-card sendforce-gs-card">
 				<div class="sendforce-card-header">
 					<h2><?php esc_html_e( 'General Settings', 'sendforce-mail-relay' ); ?></h2>
 				</div>
 				<div class="sendforce-card-body">
 
-					<!-- Primary Connection -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Primary Connection', 'sendforce-mail-relay' ); ?></p>
-						<select name="sendforce_settings[default_connection]" class="sendforce-select sendforce-select-full">
-							<option value="" <?php selected( $sendforce_default_connection, '' ); ?>><?php esc_html_e( '— None —', 'sendforce-mail-relay' ); ?></option>
-							<?php foreach ( $sendforce_connections as $sendforce_conn ) :
-								$sendforce_conn_provider = $sendforce_conn['provider'] ?? 'other';
-								$sendforce_pdata = SendForce_Providers::get_provider( $sendforce_conn_provider );
-								$sendforce_lbl   = ! empty( $sendforce_conn['label'] ) ? $sendforce_conn['label'] : ( $sendforce_pdata['label'] ?? ucfirst( $sendforce_conn_provider ) );
-							?>
-							<option value="<?php echo esc_attr( $sendforce_conn['id'] ); ?>" <?php selected( $sendforce_default_connection, $sendforce_conn['id'] ); ?>>
-								<?php echo esc_html( $sendforce_lbl ); ?>
-							</option>
-							<?php endforeach; ?>
-						</select>
-						<span class="sendforce-help"><?php esc_html_e( 'Connection used to send all emails.', 'sendforce-mail-relay' ); ?></span>
-					</div>
+					<!-- ===== Sending ===== -->
+					<details class="sendforce-gs-group" open>
+						<summary class="sendforce-gs-summary">
+							<span class="dashicons dashicons-email-alt" aria-hidden="true"></span>
+							<span class="sendforce-gs-summary-text">
+								<span class="sendforce-gs-summary-title"><?php esc_html_e( 'Sending', 'sendforce-mail-relay' ); ?></span>
+								<span class="sendforce-gs-summary-desc"><?php esc_html_e( 'Connections, simulation, plain text', 'sendforce-mail-relay' ); ?></span>
+							</span>
+							<?php if ( $sendforce_gs_sim ) : ?>
+								<span class="sendforce-gs-state is-warn"><?php esc_html_e( 'Simulating', 'sendforce-mail-relay' ); ?></span>
+							<?php elseif ( '' !== $sendforce_gs_primary ) : ?>
+								<span class="sendforce-gs-state"><?php echo esc_html( $sendforce_gs_primary ); ?></span>
+							<?php else : ?>
+								<span class="sendforce-gs-state is-warn"><?php esc_html_e( 'Not set', 'sendforce-mail-relay' ); ?></span>
+							<?php endif; ?>
+						</summary>
+						<div class="sendforce-gs-group-body">
 
-					<!-- Fallback Connection -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Fallback Connection', 'sendforce-mail-relay' ); ?></p>
-						<select name="sendforce_settings[fallback_connection]" class="sendforce-select sendforce-select-full">
-							<option value="" <?php selected( $sendforce_fallback_connection, '' ); ?>><?php esc_html_e( 'None', 'sendforce-mail-relay' ); ?></option>
-							<?php foreach ( $sendforce_connections as $sendforce_conn ) :
-								$sendforce_conn_provider = $sendforce_conn['provider'] ?? 'other';
-								$sendforce_pdata = SendForce_Providers::get_provider( $sendforce_conn_provider );
-								$sendforce_lbl   = ! empty( $sendforce_conn['label'] ) ? $sendforce_conn['label'] : ( $sendforce_pdata['label'] ?? ucfirst( $sendforce_conn_provider ) );
-							?>
-							<option value="<?php echo esc_attr( $sendforce_conn['id'] ); ?>" <?php selected( $sendforce_fallback_connection, $sendforce_conn['id'] ); ?>>
-								<?php echo esc_html( $sendforce_lbl ); ?>
-							</option>
-							<?php endforeach; ?>
-						</select>
-						<span class="sendforce-help"><?php esc_html_e( 'Used if the primary connection fails.', 'sendforce-mail-relay' ); ?></span>
-					</div>
-
-					<hr class="sendforce-gs-divider">
-
-					<!-- Log Emails -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Log Emails', 'sendforce-mail-relay' ); ?></p>
-						<label class="sendforce-toggle-label">
-							<input type="checkbox" name="sendforce_settings[log_enabled]" value="1"
-								<?php checked( $sendforce_settings['log_enabled'] ?? true ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Log All Emails for Reporting', 'sendforce-mail-relay' ); ?></span>
-						</label>
-					</div>
-
-					<!-- Delete Logs -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Delete Logs', 'sendforce-mail-relay' ); ?></p>
-						<select name="sendforce_settings[log_retention_days]" class="sendforce-select sendforce-select-full">
-							<option value="7"  <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 7 ); ?>><?php esc_html_e( 'After 7 Days', 'sendforce-mail-relay' ); ?></option>
-							<option value="14" <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 14 ); ?>><?php esc_html_e( 'After 14 Days', 'sendforce-mail-relay' ); ?></option>
-							<option value="30" <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 30 ); ?>><?php esc_html_e( 'After 30 Days', 'sendforce-mail-relay' ); ?></option>
-							<option value="60" <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 60 ); ?>><?php esc_html_e( 'After 60 Days', 'sendforce-mail-relay' ); ?></option>
-							<option value="90" <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 90 ); ?>><?php esc_html_e( 'After 90 Days', 'sendforce-mail-relay' ); ?></option>
-							<option value="0"  <?php selected( $sendforce_settings['log_retention_days'] ?? 30, 0 ); ?>><?php esc_html_e( 'Never Delete', 'sendforce-mail-relay' ); ?></option>
-						</select>
-					</div>
-
-					<!-- Email Simulation -->
-					<?php /* id is the target of the header badge and the Email Test notice, so both land on the toggle rather than the top of this long page. */ ?>
-					<div class="sendforce-gs-section" id="sendforce-simulation">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Email Simulation', 'sendforce-mail-relay' ); ?></p>
-						<label class="sendforce-toggle-label">
-							<input type="checkbox" name="sendforce_settings[simulation_mode]" value="1"
-								<?php checked( ! empty( $sendforce_settings['simulation_mode'] ) ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Disable sending — log only, no email sent.', 'sendforce-mail-relay' ); ?></span>
-						</label>
-					</div>
-
-					<!-- Multi-Part Plain Text -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Multi-Part Plain Text', 'sendforce-mail-relay' ); ?></p>
-						<label class="sendforce-toggle-label">
-							<input type="checkbox" name="sendforce_settings[multipart_text]" value="1"
-								<?php checked( ! empty( $sendforce_settings['multipart_text'] ) ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Add plain text version of HTML emails.', 'sendforce-mail-relay' ); ?></span>
-						</label>
-					</div>
-
-					<hr class="sendforce-gs-divider">
-
-					<!-- Queue -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Email Queue', 'sendforce-mail-relay' ); ?></p>
-						<label class="sendforce-toggle-label" style="margin-bottom:12px;">
-							<input type="checkbox" name="sendforce_settings[queue_enabled]" value="1"
-								<?php checked( $sendforce_settings['queue_enabled'] ?? false ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Enable Email Queue', 'sendforce-mail-relay' ); ?></span>
-						</label>
-						<?php $sendforce_queue_interval = SendForce_Queue::interval_minutes( $sendforce_settings ); ?>
-						<label class="sendforce-label" for="sendforce-queue-interval" style="margin-top:10px;display:block;"><?php esc_html_e( 'Send Interval', 'sendforce-mail-relay' ); ?></label>
-						<select id="sendforce-queue-interval" name="sendforce_settings[queue_interval]" class="sendforce-select">
-							<?php foreach ( SendForce_Queue::allowed_intervals() as $sendforce_minutes ) : ?>
-								<option value="<?php echo esc_attr( $sendforce_minutes ); ?>" <?php selected( $sendforce_queue_interval, $sendforce_minutes ); ?>>
-									<?php
-									echo esc_html(
-										1 === $sendforce_minutes
-											? __( 'Every minute', 'sendforce-mail-relay' )
-											/* translators: %d: number of minutes (5 or more) */
-											: sprintf( _n( 'Every %d minute', 'Every %d minutes', $sendforce_minutes, 'sendforce-mail-relay' ), $sendforce_minutes )
-									);
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Primary Connection', 'sendforce-mail-relay' ); ?></p>
+								<select name="sendforce_settings[default_connection]" class="sendforce-select sendforce-select-full">
+									<option value="" <?php selected( $sendforce_default_connection, '' ); ?>><?php esc_html_e( '— None —', 'sendforce-mail-relay' ); ?></option>
+									<?php foreach ( $sendforce_connections as $sendforce_conn ) :
+										$sendforce_conn_provider = $sendforce_conn['provider'] ?? 'other';
+										$sendforce_pdata = SendForce_Providers::get_provider( $sendforce_conn_provider );
+										$sendforce_lbl   = ! empty( $sendforce_conn['label'] ) ? $sendforce_conn['label'] : ( $sendforce_pdata['label'] ?? ucfirst( $sendforce_conn_provider ) );
 									?>
-								</option>
-							<?php endforeach; ?>
-						</select>
-						<span class="sendforce-help"><?php esc_html_e( 'How often queued emails are sent. A longer interval sends in fewer, larger runs, so emails wait longer before they go out.', 'sendforce-mail-relay' ); ?></span>
+									<option value="<?php echo esc_attr( $sendforce_conn['id'] ); ?>" <?php selected( $sendforce_default_connection, $sendforce_conn['id'] ); ?>>
+										<?php echo esc_html( $sendforce_lbl ); ?>
+									</option>
+									<?php endforeach; ?>
+								</select>
+								<span class="sendforce-help"><?php esc_html_e( 'Connection used to send all emails.', 'sendforce-mail-relay' ); ?></span>
+							</div>
 
-						<label class="sendforce-label" style="margin-top:14px;display:block;"><?php esc_html_e( 'Batch Size', 'sendforce-mail-relay' ); ?></label>
-						<input type="number" name="sendforce_settings[batch_size]" value="<?php echo esc_attr( $sendforce_settings['batch_size'] ?? 50 ); ?>" class="sendforce-input" min="1" max="500" />
-						<span class="sendforce-help"><?php esc_html_e( 'The most emails sent in one run. With a longer interval, raise this so your queue keeps up.', 'sendforce-mail-relay' ); ?></span>
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Fallback Connection', 'sendforce-mail-relay' ); ?></p>
+								<select name="sendforce_settings[fallback_connection]" class="sendforce-select sendforce-select-full">
+									<option value="" <?php selected( $sendforce_fallback_connection, '' ); ?>><?php esc_html_e( 'None', 'sendforce-mail-relay' ); ?></option>
+									<?php foreach ( $sendforce_connections as $sendforce_conn ) :
+										$sendforce_conn_provider = $sendforce_conn['provider'] ?? 'other';
+										$sendforce_pdata = SendForce_Providers::get_provider( $sendforce_conn_provider );
+										$sendforce_lbl   = ! empty( $sendforce_conn['label'] ) ? $sendforce_conn['label'] : ( $sendforce_pdata['label'] ?? ucfirst( $sendforce_conn_provider ) );
+									?>
+									<option value="<?php echo esc_attr( $sendforce_conn['id'] ); ?>" <?php selected( $sendforce_fallback_connection, $sendforce_conn['id'] ); ?>>
+										<?php echo esc_html( $sendforce_lbl ); ?>
+									</option>
+									<?php endforeach; ?>
+								</select>
+								<span class="sendforce-help"><?php esc_html_e( 'Used if the primary connection fails.', 'sendforce-mail-relay' ); ?></span>
+							</div>
 
-						<label class="sendforce-label" style="margin-top:14px;display:block;"><?php esc_html_e( 'Max Retry Attempts', 'sendforce-mail-relay' ); ?></label>
-						<input type="number" name="sendforce_settings[max_attempts]" value="<?php echo esc_attr( $sendforce_settings['max_attempts'] ?? 3 ); ?>" class="sendforce-input" min="1" max="10" />
-						<span class="sendforce-help"><?php esc_html_e( 'How many times a failed email is retried before being marked failed.', 'sendforce-mail-relay' ); ?></span>
-					</div>
+							<?php /* id is the target of the header badge and the Email Test notice; admin.js opens this group when the link is followed. */ ?>
+							<div class="sendforce-gs-section" id="sendforce-simulation">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Email Simulation', 'sendforce-mail-relay' ); ?></p>
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[simulation_mode]" value="1"
+										<?php checked( $sendforce_gs_sim ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Disable sending — log only, no email sent.', 'sendforce-mail-relay' ); ?></span>
+								</label>
+							</div>
 
-					<hr class="sendforce-gs-divider">
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Multi-Part Plain Text', 'sendforce-mail-relay' ); ?></p>
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[multipart_text]" value="1"
+										<?php checked( ! empty( $sendforce_settings['multipart_text'] ) ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Add plain text version of HTML emails.', 'sendforce-mail-relay' ); ?></span>
+								</label>
+							</div>
 
-					<!-- Developer Debug -->
-					<div class="sendforce-gs-section">
-						<p class="sendforce-gs-section-title"><?php esc_html_e( 'Developer Debug', 'sendforce-mail-relay' ); ?></p>
-						<label class="sendforce-toggle-label">
-							<input type="checkbox" name="sendforce_settings[developer_debug]" value="1"
-								<?php checked( ! empty( $sendforce_settings['developer_debug'] ) ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Mirror SMTP and API debug output to debug.log', 'sendforce-mail-relay' ); ?></span>
-						</label>
-						<span class="sendforce-help"><?php esc_html_e( 'Requires WP_DEBUG and WP_DEBUG_LOG to be enabled in wp-config.php. Secrets are redacted before writing.', 'sendforce-mail-relay' ); ?></span>
-					</div>
+						</div>
+					</details>
 
-					<!-- Log Email Body -->
-					<div class="sendforce-gs-section">
-						<label class="sendforce-toggle-label">
-							<input type="checkbox" name="sendforce_settings[log_email_body]" value="1"
-								<?php checked( $sendforce_settings['log_email_body'] ?? true ); ?> class="sendforce-toggle-input" />
-							<span class="sendforce-toggle"></span>
-							<span><?php esc_html_e( 'Log Email Body', 'sendforce-mail-relay' ); ?></span>
-						</label>
-						<span class="sendforce-help"><?php esc_html_e( 'Disable for privacy.', 'sendforce-mail-relay' ); ?></span>
-					</div>
+					<!-- ===== Email Log ===== -->
+					<details class="sendforce-gs-group">
+						<summary class="sendforce-gs-summary">
+							<span class="dashicons dashicons-list-view" aria-hidden="true"></span>
+							<span class="sendforce-gs-summary-text">
+								<span class="sendforce-gs-summary-title"><?php esc_html_e( 'Email Log', 'sendforce-mail-relay' ); ?></span>
+								<span class="sendforce-gs-summary-desc"><?php esc_html_e( 'What is logged and for how long', 'sendforce-mail-relay' ); ?></span>
+							</span>
+							<span class="sendforce-gs-state<?php echo $sendforce_gs_log_on ? '' : ' is-off'; ?>">
+								<?php
+								if ( ! $sendforce_gs_log_on ) {
+									esc_html_e( 'Off', 'sendforce-mail-relay' );
+								} elseif ( 0 === $sendforce_gs_retention ) {
+									esc_html_e( 'On · kept', 'sendforce-mail-relay' );
+								} else {
+									/* translators: %d: number of days logs are kept */
+									echo esc_html( sprintf( __( 'On · %d days', 'sendforce-mail-relay' ), $sendforce_gs_retention ) );
+								}
+								?>
+							</span>
+						</summary>
+						<div class="sendforce-gs-group-body">
 
-					<div style="margin-top:20px;">
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Log Emails', 'sendforce-mail-relay' ); ?></p>
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[log_enabled]" value="1"
+										<?php checked( $sendforce_gs_log_on ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Log All Emails for Reporting', 'sendforce-mail-relay' ); ?></span>
+								</label>
+							</div>
+
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Log Email Body', 'sendforce-mail-relay' ); ?></p>
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[log_email_body]" value="1"
+										<?php checked( $sendforce_settings['log_email_body'] ?? true ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Save the message text with each log entry', 'sendforce-mail-relay' ); ?></span>
+								</label>
+								<span class="sendforce-help"><?php esc_html_e( 'Turn off for privacy.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Delete Logs', 'sendforce-mail-relay' ); ?></p>
+								<select name="sendforce_settings[log_retention_days]" class="sendforce-select sendforce-select-full">
+									<option value="7"  <?php selected( $sendforce_gs_retention, 7 ); ?>><?php esc_html_e( 'After 7 Days', 'sendforce-mail-relay' ); ?></option>
+									<option value="14" <?php selected( $sendforce_gs_retention, 14 ); ?>><?php esc_html_e( 'After 14 Days', 'sendforce-mail-relay' ); ?></option>
+									<option value="30" <?php selected( $sendforce_gs_retention, 30 ); ?>><?php esc_html_e( 'After 30 Days', 'sendforce-mail-relay' ); ?></option>
+									<option value="60" <?php selected( $sendforce_gs_retention, 60 ); ?>><?php esc_html_e( 'After 60 Days', 'sendforce-mail-relay' ); ?></option>
+									<option value="90" <?php selected( $sendforce_gs_retention, 90 ); ?>><?php esc_html_e( 'After 90 Days', 'sendforce-mail-relay' ); ?></option>
+									<option value="0"  <?php selected( $sendforce_gs_retention, 0 ); ?>><?php esc_html_e( 'Never Delete', 'sendforce-mail-relay' ); ?></option>
+								</select>
+							</div>
+
+						</div>
+					</details>
+
+					<!-- ===== Email Queue ===== -->
+					<details class="sendforce-gs-group" id="sendforce-queue-settings">
+						<summary class="sendforce-gs-summary">
+							<span class="dashicons dashicons-clock" aria-hidden="true"></span>
+							<span class="sendforce-gs-summary-text">
+								<span class="sendforce-gs-summary-title"><?php esc_html_e( 'Email Queue', 'sendforce-mail-relay' ); ?></span>
+								<span class="sendforce-gs-summary-desc"><?php esc_html_e( 'Send in the background, with retries', 'sendforce-mail-relay' ); ?></span>
+							</span>
+							<span class="sendforce-gs-state<?php echo $sendforce_gs_queue_on ? '' : ' is-off'; ?>">
+								<?php
+								if ( ! $sendforce_gs_queue_on ) {
+									esc_html_e( 'Off', 'sendforce-mail-relay' );
+								} elseif ( 1 === $sendforce_queue_interval ) {
+									esc_html_e( 'On · every min', 'sendforce-mail-relay' );
+								} else {
+									/* translators: %d: minutes between queue runs */
+									echo esc_html( sprintf( __( 'On · every %d min', 'sendforce-mail-relay' ), $sendforce_queue_interval ) );
+								}
+								?>
+							</span>
+						</summary>
+						<div class="sendforce-gs-group-body">
+
+							<div class="sendforce-gs-section">
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[queue_enabled]" value="1"
+										<?php checked( $sendforce_gs_queue_on ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Enable Email Queue', 'sendforce-mail-relay' ); ?></span>
+								</label>
+								<span class="sendforce-help"><?php esc_html_e( 'Emails are saved and sent by a background task instead of while the page loads. The settings below only apply while this is on.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+							<div class="sendforce-gs-section">
+								<label class="sendforce-gs-section-title" for="sendforce-queue-interval"><?php esc_html_e( 'Send Interval', 'sendforce-mail-relay' ); ?></label>
+								<select id="sendforce-queue-interval" name="sendforce_settings[queue_interval]" class="sendforce-select sendforce-select-full">
+									<?php foreach ( SendForce_Queue::allowed_intervals() as $sendforce_minutes ) : ?>
+										<option value="<?php echo esc_attr( $sendforce_minutes ); ?>" <?php selected( $sendforce_queue_interval, $sendforce_minutes ); ?>>
+											<?php
+											echo esc_html(
+												1 === $sendforce_minutes
+													? __( 'Every minute', 'sendforce-mail-relay' )
+													/* translators: %d: number of minutes (5 or more) */
+													: sprintf( _n( 'Every %d minute', 'Every %d minutes', $sendforce_minutes, 'sendforce-mail-relay' ), $sendforce_minutes )
+											);
+											?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+								<span class="sendforce-help"><?php esc_html_e( 'How often queued emails are sent. A longer interval sends in fewer, larger runs, so emails wait longer before they go out.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+							<div class="sendforce-gs-section">
+								<label class="sendforce-gs-section-title" for="sendforce-batch-size"><?php esc_html_e( 'Batch Size', 'sendforce-mail-relay' ); ?></label>
+								<input type="number" id="sendforce-batch-size" name="sendforce_settings[batch_size]" value="<?php echo esc_attr( $sendforce_settings['batch_size'] ?? 50 ); ?>" class="sendforce-input" min="1" max="500" />
+								<span class="sendforce-help"><?php esc_html_e( 'The most emails sent in one run. With a longer interval, raise this so your queue keeps up.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+							<div class="sendforce-gs-section">
+								<label class="sendforce-gs-section-title" for="sendforce-max-attempts"><?php esc_html_e( 'Max Retry Attempts', 'sendforce-mail-relay' ); ?></label>
+								<input type="number" id="sendforce-max-attempts" name="sendforce_settings[max_attempts]" value="<?php echo esc_attr( $sendforce_settings['max_attempts'] ?? 3 ); ?>" class="sendforce-input" min="1" max="10" />
+								<span class="sendforce-help"><?php esc_html_e( 'How many times a failed email is retried before being marked failed.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+						</div>
+					</details>
+
+					<!-- ===== Advanced ===== -->
+					<details class="sendforce-gs-group">
+						<summary class="sendforce-gs-summary">
+							<span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>
+							<span class="sendforce-gs-summary-text">
+								<span class="sendforce-gs-summary-title"><?php esc_html_e( 'Advanced', 'sendforce-mail-relay' ); ?></span>
+								<span class="sendforce-gs-summary-desc"><?php esc_html_e( 'Debug output for troubleshooting', 'sendforce-mail-relay' ); ?></span>
+							</span>
+							<span class="sendforce-gs-state<?php echo $sendforce_gs_debug_on ? ' is-warn' : ' is-off'; ?>">
+								<?php $sendforce_gs_debug_on ? esc_html_e( 'Debug on', 'sendforce-mail-relay' ) : esc_html_e( 'Debug off', 'sendforce-mail-relay' ); ?>
+							</span>
+						</summary>
+						<div class="sendforce-gs-group-body">
+
+							<div class="sendforce-gs-section">
+								<p class="sendforce-gs-section-title"><?php esc_html_e( 'Developer Debug', 'sendforce-mail-relay' ); ?></p>
+								<label class="sendforce-toggle-label">
+									<input type="checkbox" name="sendforce_settings[developer_debug]" value="1"
+										<?php checked( $sendforce_gs_debug_on ); ?> class="sendforce-toggle-input" />
+									<span class="sendforce-toggle"></span>
+									<span><?php esc_html_e( 'Mirror SMTP and API debug output to debug.log', 'sendforce-mail-relay' ); ?></span>
+								</label>
+								<span class="sendforce-help"><?php esc_html_e( 'Requires WP_DEBUG and WP_DEBUG_LOG to be enabled in wp-config.php. Secrets are redacted before writing.', 'sendforce-mail-relay' ); ?></span>
+							</div>
+
+						</div>
+					</details>
+
+					<div class="sendforce-gs-save">
 						<button type="submit" class="sendforce-btn sendforce-btn-primary" style="width:100%;">
 							<?php esc_html_e( 'Save Settings', 'sendforce-mail-relay' ); ?>
 						</button>

@@ -380,6 +380,7 @@ We recommend adding a note to your site's privacy policy if you log email conten
 For the **complete** release history with full detail on every change, see the [full changelog on GitHub](https://github.com/ShiponKarmakar/SendForce/blob/main/CHANGELOG.md) (also bundled with the plugin as CHANGELOG.md) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
 
 = 1.2.2 =
+* Improved: General Settings are now grouped into Sending, Email Log, Email Queue and Advanced. Each group shows its current state (for example "On · 30 days") so you can find any setting at a glance, and the panel no longer hides its last settings and Save button on smaller screens.
 * New: choose how often the Email Queue sends: every 1, 5, 10, 15 or 30 minutes (Settings → Email Queue → Send Interval). Every minute stays the default. Thanks to @dimalifragis for the suggestion.
 * Fixed: emails from plugins that mark HTML only through WordPress's `wp_mail_content_type` filter, such as Directorist, arrived as plain text showing raw HTML code when the Email Queue was on or an API provider was used. SendForce now decides between HTML and plain text exactly the way WordPress does. Thanks to @dimalifragis for the report.
 

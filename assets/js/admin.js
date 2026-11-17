@@ -1775,4 +1775,62 @@
 		});
 
 	});
+
+	/*
+	 * General Settings groups (Settings tab).
+	 *
+	 * 1. A link to a setting inside a closed group (the Simulation Mode badge
+	 *    and the Email Test notice use #sendforce-simulation) opens that
+	 *    group, scrolls to the setting and briefly highlights it.
+	 * 2. Which groups are open survives Save: options.php reloads the page,
+	 *    and without this every group but Sending would snap shut, hiding the
+	 *    setting just changed. Session storage only; failures are ignored.
+	 */
+	$( function() {
+		var groups = document.querySelectorAll( '.sendforce-gs-group' );
+		if ( ! groups.length ) {
+			return;
+		}
+		var KEY = 'sendforceGsOpen';
+
+		function revealHash() {
+			var id = window.location.hash.slice( 1 );
+			var target = id ? document.getElementById( id ) : null;
+			var group = target && target.closest ? target.closest( '.sendforce-gs-group' ) : null;
+			if ( ! group ) {
+				return;
+			}
+			group.open = true;
+			target.scrollIntoView( { block: 'center' } );
+			target.classList.remove( 'is-target' );
+			void target.offsetWidth; // Restart the highlight animation.
+			target.classList.add( 'is-target' );
+		}
+
+		try {
+			// One-shot: applies to the reload right after Save, then a normal
+			// visit starts again with only Sending open.
+			var saved = JSON.parse( window.sessionStorage.getItem( KEY ) || 'null' );
+			window.sessionStorage.removeItem( KEY );
+			if ( saved && saved.length === groups.length ) {
+				Array.prototype.forEach.call( groups, function( g, i ) {
+					g.open = !! saved[ i ];
+				} );
+			}
+		} catch ( e ) {}
+
+		var form = document.getElementById( 'sendforce-general-form' );
+		if ( form ) {
+			form.addEventListener( 'submit', function() {
+				try {
+					window.sessionStorage.setItem( KEY, JSON.stringify( Array.prototype.map.call( groups, function( g ) {
+						return g.open ? 1 : 0;
+					} ) ) );
+				} catch ( e ) {}
+			} );
+		}
+
+		revealHash();
+		window.addEventListener( 'hashchange', revealHash );
+	} );
 })( jQuery );
