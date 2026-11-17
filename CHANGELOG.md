@@ -1,15 +1,21 @@
-# SendForce Mail Relay — Full Changelog
+<div align="center">
 
-> This is the **complete** release history with full detail. The short version
-> shown on WordPress.org is in [readme.txt](readme.txt) and is truncated to
-> the 5,000-word limit the plugin directory enforces. For older releases see
-> below — every change is preserved here for reference and audit.
->
-> The in-admin **"What's New"** tab inside the SendForce settings parses this
-> file directly, so you can also browse the full history without leaving
-> WordPress.
+# SendForce Mail Relay — Changelog
 
-## = 1.2.1 =
+Every release, in full detail.
+
+[WordPress.org](https://wordpress.org/plugins/sendforce-mail-relay/) · [Live demo](https://playground.wordpress.net/?blueprint-url=https://wordpress.org/plugins/wp-json/plugins/v1/plugin/sendforce-mail-relay/blueprint.json) · [Source](https://github.com/ShiponKarmakar/SendForce) · [Support forum](https://wordpress.org/support/plugin/sendforce-mail-relay/)
+
+</div>
+
+> [!NOTE]
+> WordPress.org shows a shorter version of this history, because its readme changelog is capped at 5,000 words. Nothing is cut here. The **What's New** tab inside SendForce reads this same file, so you can browse it without leaving WordPress.
+
+**Jump to:** [1.2.1](#121) · [1.2.0](#120) · [1.1.3](#113) · [1.1.2](#112) · [1.1.1](#111) · [1.1.0](#110) · [1.0.x releases](#earlier-releases-10x)
+
+## 1.2.1
+
+<sub>Not released yet</sub>
 
 * **Fixed — plain-text emails arrived as HTML when "Multi-Part Plain Text" was on.** The setting is meant to add a plain-text version to HTML emails, but on SMTP and PHP Mail connections it was applied to every email. Giving a plain-text message an alternative body makes PHPMailer build `multipart/alternative`, and PHPMailer always labels that second part `text/html` — so the plain body went out declared as HTML, and mail clients displayed it that way. That covered most of WordPress's own mail: password resets, new-user and admin notifications, and the Email Test, which sends plain text. The option now only acts on emails that are actually HTML. The API mailers were unaffected; they already checked. Reported on the support forum by @dimalifragis.
 * **Fixed — a PHP deprecation notice on every SMTP send.** Two places set `$phpmailer->Exceptions = true`, but PHPMailer has no such property — its switch is a protected `$exceptions`, set only through the constructor. The assignment never did anything; on PHP 8.2 and later it instead logged "Creation of dynamic property WP_PHPMailer::$Exceptions is deprecated" once per email, and PHP 9 will make it a fatal error. Both mailers were already created with exceptions on, so the lines are simply removed and nothing about sending changes. Verified that a failed SMTP send still returns `false` and still reports the real connection error.
@@ -18,7 +24,9 @@
 * **Both routes land on the toggle, not the top of the page.** The Settings tab is long, and the Email Simulation control sits well down it; the badge and the Email Test button now link to the control itself.
 * At narrow widths the badge takes its own row above the navigation icons, rather than competing with them for space.
 
-## = 1.2.0 =
+## 1.2.0
+
+<sub>Released 28 October 2026</sub>
 
 * **Fixed — Microsoft 365 silently dropped every attachment.** `SendForce_API_Outlook::send()` accepted `$attachments` and never used them: the Graph `sendMail` payload carried no `message.attachments`, Microsoft answered HTTP 202, and the mail arrived — complete except for the files, in the recipient's inbox and in Sent Items alike. Attachments are now sent as Graph `#microsoft.graph.fileAttachment` resources. Reported on the support forum by @ydekinder against 1.1.3, with debug logs showing exactly this; present since the mailer was written.
 * **Fixed — Zoho ZeptoMail dropped attachments the same way.** Found while checking whether the Microsoft bug was isolated: its payload never carried the files either. Now sent as ZeptoMail `attachments[]` entries. Every other API mailer was verified to put attachments on the wire.
@@ -38,7 +46,9 @@
 * **Fixed — a CSS class collision.** The Setup screen originally reused `.sendforce-setup-card` and `.sendforce-setup-steps`, which the Dashboard tab already owns, and silently inherited that card's gradient, flex layout and padding — the screen rendered with a green tint, misaligned content and a large empty gap. Everything here is now namespaced `sendforce-ob-`, with a test that fails if the Dashboard tab's class names reappear in this template. The hero no longer squashes the 913×118 wordmark SVG into a 46px square.
 * **Tested** on a real throwaway site end to end: the plugin was activated through the actual Plugins page and the redirect chain followed (WordPress → `plugins.php?activate=true` → the Setup screen), an Easy WP SMTP configuration was imported from the Setup screen in a headless browser, and the Plugins page was confirmed clean afterwards. Unit coverage adds the redirect rules (first run, second run, bulk activation, configured site, prior setup, network activation), both screen states (with and without importable plugins), and the notice's new scope.
 
-## = 1.1.3 =
+## 1.1.3
+
+<sub>Released 18 October 2026</sub>
 
 * **New — import from WP Mail SMTP, FluentSMTP and Easy WP SMTP.** `SendForce_Importer` reads each plugin's settings through that plugin's own API — never its raw option — because both encrypt credentials and both let `wp-config.php` constants override saved values: WP Mail SMTP via `WPMailSMTP\Options` (applies `WPMS_*` constants, decrypts the libsodium-encrypted SMTP password), FluentSMTP via `fluentMailGetSettings()` (decrypts AES-encrypted fields under its versioned `ENCRYPTED_FIELDS` rules — e.g. the SES access key is only encrypted from `encrypt_version` 2, so decrypting a v1 site's plain value would corrupt it). Using their readers keeps the importer correct when either plugin changes its storage, which is why the source plugin must be active to import. WP Mail SMTP's own FluentSMTP importer reads the raw option, which predates FluentSMTP's encryption and imports ciphertext.
 * **Easy WP SMTP shares WP Mail SMTP's settings design** — an `Options` class with `get( $group, $key )` and `is_const_defined()`, one active mailer, the SMTP password encrypted with libsodium and decrypted on read, and the same optional network-wide mode — so both are handled by one reader (`plan_options_api()`) keyed by namespace, rather than a second copy of the mapping. Keys that exist on only one of them (Easy WP SMTP's Gmail One-Click Setup, WP Mail SMTP's Pepipost) read back empty on the other, so the shared path stays correct. Easy WP SMTP's mailers map across in full: PHP mail, SMTP, SendLayer, SMTP.com, Brevo/Sendinblue, Amazon SES, Gmail, Mailgun (with region), Mailjet, MailerSend, Mandrill, Outlook, Postmark, Resend, SendGrid, Elastic Email, SMTP2GO and SparkPost; Zoho Mail is reported as not importable, as it is for WP Mail SMTP.
@@ -52,7 +62,9 @@
 * **Changed — more strings translatable.** WP-CLI command output (`wp sendforce test|queue|logs`), the Gmail and Microsoft 365 "not signed in / credentials missing" errors shown in the email log, the routing rule card's fallback titles and the `(unnamed)` connection labels now go through `__()` with translator comments. The Gmail and Outlook messages also lost their internal debug markers (`PRECHECK`, `MARKER_v1024_PRECHECK`) and key-length dumps in favour of a sentence that says what to do. Scans confirm every `__()`-family call in the plugin uses the `sendforce-mail-relay` domain, every placeholder string has a translator comment, no user-facing literal text is left in templates or PHP, and every key the admin, routing and import scripts look up is present in the localized bundles. Cron schedule `display` labels stay literal on purpose: `cron_schedules` fires before the textdomain loads, and WP 6.7+ warns about translating that early.
 * **Changed — sidebar label.** The admin menu item is now "SendForce" instead of the "SF Mail Relay" abbreviation; it still fits on one line. The page title stays "SendForce Mail Relay".
 
-## = 1.1.2 =
+## 1.1.2
+
+<sub>Released 14 October 2026</sub>
 
 * **New — WordPress Multisite support.** Network Activate only fires the activation hook on the main site, and sites created later never fire it, so on a network every other site ran without its tables: emails sent from those sites weren't logged ("table doesn't exist"), queuing fell back to immediate sending, default settings were missing, and the daily log cleanup was never scheduled. Setup is now done per site by `sendforce_maybe_setup_site()` on `plugins_loaded`: a single autoloaded-option check (`sendforce_db_version` against `SENDFORCE_VERSION`) on every request, running `SendForce_Activator::setup_site()` (default options, cron events, then tables, which record the version last) once per site per plugin version, on whatever request reaches the site first, front-end and cron included. It replaces `sendforce_maybe_upgrade_db()`, which only ran for admin requests and ran a `SHOW TABLES` query on every admin page load. No activation-time loop over sites, so large networks can't time out.
 * **Setup lock.** Simultaneous first visits could each run setup and schedule duplicate cron events. Setup now takes a per-site lock with an atomic `INSERT IGNORE` on the unique `option_name` (`add_option()` can't serve as a lock: it's an `INSERT … ON DUPLICATE KEY UPDATE`, which overwrites instead of failing), takes over a lock older than a minute with a compare-and-swap `UPDATE`, and re-reads options from the database after acquiring it, since each request starts with its own cached copy. Verified: 3 rounds of 8 simultaneous first visits ran setup exactly once each and left exactly one event per cron hook.
@@ -64,11 +76,15 @@
 * **Tested end-to-end** through `send_via_api()` with real provider classes and the HTTP request intercepted: plugin `From:` header, a WooCommerce-style filter, Sender Identity override, Microsoft 365 opt-out, CR/LF and invalid addresses, array headers with a quoted name, Mailgun's form-encoded payload, the no-From fallback, and a Smart Routing rule sending through a different API connection than the primary.
 * **Docs — WP-CLI FAQ.** The readme listed only 4 of the 9 `wp sendforce` commands. A new "Does it support WP-CLI?" FAQ lists all of them (test; queue process / stats / clear; log list / tail / count / delete; sysinfo), with the Multisite `--url` flag and running the queue from a server cron.
 
-## = 1.1.1 =
+## 1.1.1
+
+<sub>Released 11 October 2026</sub>
 
 * **Docs — video overview.** Added a YouTube walkthrough to the readme's Description section (https://youtu.be/dUv4HolX5dk), which WordPress.org embeds as a playable video on the plugin page. No code changes.
 
-## = 1.1.0 =
+## 1.1.0
+
+<sub>Released 9 October 2026</sub>
 
 * **New — per-connection sending pace.** Each connection has a "Max emails per minute" setting (0 = unlimited). When the Email Queue sends, it works out which connection each email will go through — the Smart Routing target if a rule matches, otherwise the primary — and skips the email for this run (leaving it queued, unclaimed) once that connection has used its allowance for the current UTC minute. Nothing sleeps, so runs stay short. The queue fetches a wider candidate window (5× the batch size, max 1,000) than it sends, so a backlog on one rate-limited connection can't starve the others. Every attempt counts against the allowance, failures included, and a fallback recovery also counts against the fallback connection. Per-minute counters are transients; parallel runs can overshoot a limit by a send or two, but never send an email twice. The router now records the chosen connection in the merged settings as `_connection_id`, and the queue's prediction mirrors core's `wp_mail()` attributes (including WP 6.9+'s `embeds`) so the router's per-request cache returns the same answer at send time, round-robin rules included.
 * **Improved — queue runs every minute while enabled, with a time budget.** While the Email Queue is enabled, the `sendforce_process_queue` event uses a new `sendforce_every_minute` schedule (was every 5 minutes); while it is disabled it stays on the 5-minute schedule, so sites that don't use the queue don't spawn WP-Cron's background request every minute. `SendForce_Queue::ensure_schedule()` runs on `init` and moves the event whenever it doesn't match `desired_schedule()` (on update, and whenever the queue is toggled), and refuses to clear the old event unless the replacement schedule is registered. Each run stops sending after 20 seconds (filter: `sendforce_queue_time_budget`), leaving the rest queued for the next run, so a large batch can't overrun a host's PHP worker limit. The batch size still caps sends per run.
@@ -79,22 +95,37 @@
 * **Docs — corrected the Smart Routing description.** The readme said rules can target "a round-robin pool". The routing engine supports round-robin, but the rule editor has no way to create one yet, so the claim was removed.
 * **Fixed — Smart Routing state could leak under queue mode.** Routing swaps in a rule's connection settings and restores them on `wp_mail_succeeded` / `wp_mail_failed`. When the queue then short-circuited the send, neither hook fired, so later emails in the same request used the routed connection. Because the interceptor now runs before routing, routing never runs for an email that is only being queued.
 
-## = 1.0.40 =
+## Earlier releases (1.0.x)
+
+37 releases, from the first public version to 1.0.40. Click to expand.
+
+<details>
+<summary><strong>Show 1.0.0 – 1.0.40</strong></summary>
+
+### 1.0.40
+
+<sub>Released 29 September 2026</sub>
 
 * **Compliance — no inline script in wp-admin.** The "updated to vX" notice printed an inline `<script>`, which WordPress.org's guidelines (and Plugin Check) flag; 1.0.4 had removed inline scripts for this reason. Its behaviour now lives in `assets/js/welcome-notice.js`, enqueued only when the notice renders, with the AJAX URL and nonce passed via `wp_localize_script()`. The "×" detection also uses `closest()` so a click on a child element of the dismiss button still counts.
 * **Compliance — explicit output escaping.** Three template echoes (changelog accordion current/open state, routing on/off status class, Email Test provider-status dot) printed ternary literals without an escaping function. They were not exploitable, but Plugin Check's `OutputNotEscaped` rule flags them, so they're now wrapped in `esc_attr()`.
 * **Hardened the OAuth callback page.** The popup page embeds the result payload (which can carry provider error text) in an inline script; it's now encoded with `JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT` so a crafted message can't disrupt the HTML parser. That page is a standalone document that exits after rendering, so its inline style/script remain appropriate.
 
-## = 1.0.39 =
+### 1.0.39
+
+<sub>Released 29 August 2026</sub>
 
 * **Fixed — admin notices clipped by the top bar.** The "another active SMTP plugin" warning lost its last row behind the admin UI: `.sendforce-app` uses `margin-top:-20px` with `position:relative;z-index:1`, so with a notice's `margin-bottom:0` the app's sticky top bar painted over it. The conflict notice, and the credential-recovery notice which renders in the same position, now carry bottom clearance and `z-index:2`.
 * **Hardened the conflict-notice script.** It now initialises even if the DOM has already parsed (so its dismiss/close buttons keep working under a defer/async loading strategy), and iterates the button NodeList in a way that doesn't depend on `NodeList.forEach`.
 
-## = 1.0.38 =
+### 1.0.38
+
+<sub>Released 14 August 2026</sub>
 
 * **Compatibility — tested up to WordPress 7.1.** Verified against the 7.1 changes: the plugin uses no block-editor / `@wordpress/components` UI (iframed editor, 40px controls, persistent toolbar, SVG Icon API all N/A), no client-side media processing, and no jQuery UI (only jQuery core, unchanged in 7.1), so no code changes were required.
 
-## = 1.0.37 =
+### 1.0.37
+
+<sub>Released 31 July 2026</sub>
 
 A consolidated release rolling up the credential-encryption hardening, the fixes from a full-feature audit of the queue/router/lifecycle, and full JavaScript translatability of the admin UI.
 
@@ -109,7 +140,9 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * **Improved — the admin UI's JavaScript strings are now translatable.** Text produced by `admin.js` and the Smart Routing builder `routing.js` (dynamic field labels, button states, confirmation dialogs, the Gmail/Microsoft 365 OAuth flow, and routing condition/operator/preset labels) was hardcoded English in every locale. Both scripts now read their strings from a `wp_localize_script()` bundle populated with `__()` on the PHP side, via `sfT()` / `rT()` helpers supporting `%s` / `%d` substitution, with English fallbacks and escaped output — so translate.wordpress.org now delivers the JS translations automatically. (This plugin has no `@wordpress/i18n` build pipeline, so the fix is `wp_localize_script()` rather than `wp_set_script_translations()`, which would be inert here.)
 * **Fixed — "updated to vX" notice would not go away.** It only recorded itself as seen when dismissed via the small "×" button; clicking **See what's new** navigated away without marking it seen, so it reappeared on the next page load. The button now also dismisses it permanently, using `navigator.sendBeacon` so the request survives the navigation it triggers.
 
-## = 1.0.34 =
+### 1.0.34
+
+<sub>Released 26 June 2026</sub>
 
 * UI: **Redesigned the admin top navigation.** The tabs are now grouped by purpose with thin dividers — Overview (Dashboard) | Setup (Settings, Routing, Email Test) | Activity (Email Log, Queue, Alerts) | What's New — so the bar reads as organized sections rather than one flat row. The active tab now uses a brand-coloured highlight (tinted pill, teal icon, faint outline) instead of a flat gray box, hover/focus states are refined, and the version badge is a subtle pill. Group dividers tighten automatically in the icon-only width.
 * Compliance: **Display name finalized.** Set the WordPress.org listing display name to "SendForce Mail SMTP Relay - SMTP and Email API" — it no longer uses the discouraged "Free" / "WP" / "Plugin" terms or any third-party trademarks. The internal product brand and `Plugin Name` header remain "SendForce Mail Relay".
@@ -119,7 +152,9 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Fix: **Fallback-recovered email re-queued and re-sent.** With the queue enabled and an SMTP-primary connection plus a fallback, core's `wp_mail()` returns false even when the fallback connection actually delivered the email (it reports the primary's failure). `process_queue()` read only that boolean and re-queued the row, re-sending via the fallback on the next cron run. It now consults `SendForce_Mailer::$last_send_used_fallback` (reset before each send) and treats a fallback recovery as success.
 * Note: These were surfaced by a multi-agent audit of the mailer/queue/router interaction. The audit also flagged a parallel set of Medium/Low items (a timezone-sensitive queue lease, routing-state restore under queue mode, multisite lifecycle, and uninstall cleanup) tracked for a later release.
 
-## = 1.0.33 =
+### 1.0.33
+
+<sub>Released 6 June 2026</sub>
 
 * Compliance: **WordPress.org Plugin Directory guideline fixes.** Shortened the plugin display name from the long keyword-stuffed listing title to just "SendForce Mail Relay" (the header `Plugin Name` already used this). Removed comparative and superlative wording from the description so it no longer compares the plugin to other plugins. Fixed three stale third-party policy links in the External Services disclosure — Elastic Email's privacy/terms (now point to their site, which has no stable deep-link) and Sinch's terms of service (now the `sinch.com/legal/` hub). Pointed the in-plugin "Leave a review" link at the full reviews page rather than a pre-filtered rating link.
 * Fix: **Settings provider grid flashed all 24 providers on first load.** The grid's collapsed state (15 common providers shown + a "Show All Providers" toggle) was applied only by JavaScript on `$(document).ready()`, so before the script ran — most visible on first install, where the connection form auto-opens and assets aren't cached yet — all 24 providers rendered. The wrap now carries the `collapsed` class server-side, so the CSS hides the extra providers immediately on paint and there's no flash; the JavaScript toggle is unchanged.
@@ -128,13 +163,17 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Performance: **Cached dashboard and chart statistics with automatic invalidation.** `SendForce_Admin::get_dashboard_stats()` ran two lifetime `COUNT(*)` queries on every single dashboard page load, and `get_daily_stats()` ran one `COUNT(*)` per day per status — up to 180 separate queries for the 90-day chart range — on every chart AJAX request. On sites with large log tables this made the dashboard sluggish. Both now cache their results in one-hour transients (`sendforce_dashboard_counts` and `sendforce_daily_stats_{7,30,90}`). The cache is invalidated immediately whenever the log table's row counts change — a new send is logged (`insert_log`), the retention cron prunes old rows (`cleanup_old_logs`), or a row/rows are deleted (`delete_log`, `bulk_delete`) — via a shared `SendForce_Logger::flush_stats_cache()` helper, so the figures are never stale after real activity. The flush deletes the transients directly rather than calling into the admin class, so ordinary front-end `wp_mail()` traffic doesn't pay the cost of autoloading the large admin class on every send.
 * Internal: Added an `empty()` guard to `SendForce_Logger::bulk_delete()` so an empty ID list short-circuits to `0` instead of building a malformed `IN ()` SQL clause, and tidied a couple of scrambled method docblocks in the logger.
 
-## = 1.0.32 =
+### 1.0.32
+
+<sub>Released 28 May 2026</sub>
 
 * Compatibility: **Verified compatible with WordPress 7.0.** Bumped the readme.txt `Tested up to` header from 6.9 → 7.0 so the wp.org plugin directory's "may not be compatible with your version of WordPress" warning clears for sites already running the latest WordPress. No functional code changes were required — the plugin's existing APIs and hooks (action/filter signatures, `wp_mail` interception path, `wp_remote_post` usage, dbDelta migration logic) all continue to work as expected on 7.0.
 * Maintenance: **Refreshed wp.org plugin directory tags.** Old tags: `smtp, wp smtp, email log, mailer, email api`. New tags: `email, email log, gmail, outlook, smtp`. The change drops two low-yield tags (`wp smtp`, `mailer`) and one broad tag (`email api`) in favour of two high-intent product-name tags (`gmail`, `outlook`) that match the OAuth integrations SendForce already ships. Users searching wp.org for "gmail smtp" or "outlook smtp" plugins are now more likely to find SendForce in the results — both terms have substantially higher search volume than the dropped tags.
 * Note: No code changes between 1.0.31 and 1.0.32. This is a metadata-only release to refresh the wp.org listing and signal WordPress 7.0 compatibility.
 
-## = 1.0.31 =
+### 1.0.31
+
+<sub>Released 26 May 2026</sub>
 
 * Fix: **Email Log "Connection" filter dropped on pagination and export** (regression introduced in 1.0.30). When the new provider dropdown was used to narrow the log to, say, SendGrid-only entries, clicking page 2 of the results — or clicking "Export CSV" / "Export JSON" — silently dropped the `provider` query arg and reset the view back to all providers. The `array_filter()` arrays that build the `$sendforce_paginate_base` (passed to `paginate_links()`) and `$sendforce_export_base` (passed to the `admin-post.php` export handler) didn't include the new arg, so it was never round-tripped. Both arrays now carry `'provider' => $sendforce_provider`. Verified by paging through filtered results and confirming the exported CSV contains only the selected provider's rows.
 * Polish: **Accessibility — `aria-label` on icon-only action buttons.** The "View details" button on each Email Log row and the "Retry" / "Delete" buttons on each Queue row were rendered as icon-only (`dashicons-visibility`, `dashicons-update`, `dashicons-trash`) with only a `title` attribute. Most screen readers don't announce `title` reliably (and on touch devices the tooltip never appears), so these buttons were effectively unlabelled for assistive tech. Added `aria-label` matching the title text, plus `aria-hidden="true"` on the decorative dashicon `<span>` so the icon doesn't get announced as "image" before the label.
@@ -143,21 +182,27 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Polish: **Alerts tab SVG whitelist accepts `viewBox` (camelCase).** The `wp_kses_post()` allowed-attributes array for inline channel logos only listed lowercase `viewbox`. HTML5 parsers normalize to lowercase so most sources worked, but SVGs authored with the canonical SVG-spec camelCase `viewBox` could lose the attribute when passed through `wp_kses` — leading to a 0×0 render in strict environments. Added `'viewBox' => true` alongside the existing `'viewbox' => true` entry; both casings now survive sanitization.
 * Internal: Renamed `$current_user` to `$sendforce_current_user` in `admin/partials/tabs/email-test-tab.php`. The bare `$current_user` name collides with WP's global `$current_user` if the template is ever included from a context where that global has been imported; consistent `sendforce_` prefixing across our own variables avoids that class of surprise.
 
-## = 1.0.30 =
+### 1.0.30
+
+<sub>Released 19 May 2026</sub>
 
 * New: **Filter Email Log by connection.** A new "Connection" dropdown is rendered in the Email Log filter bar (right after the date pickers). It lists every provider that has at least one entry in the log — Amazon SES, SendGrid, Microsoft 365, Mailgun, etc. — and narrows the table to just rows matching the picked provider. Useful when you run multiple connections side-by-side: "show me only emails WooCommerce sent through SendGrid this week" or "give me the failed SES sends from yesterday so I can debug the IAM credentials". Options are populated from connections that actually have log entries, so the dropdown never shows empty/never-used providers. Selecting "All connections" (the default) keeps the existing behaviour and includes pre-1.0.30 rows that don't have the new column populated.
 * New: **"Copy diagnostic snapshot" button** on the Email Log detail modal. Click it once and the clipboard fills with a pre-formatted text bundle: plugin version, WordPress version, PHP version, log ID, created_at, status, provider, recipient, subject, error (multi-line, indented), headers (multi-line, indented), attachments, and the entire `debug_data` JSON (already redacted by the API mailer's `redact_headers()` / `redact_body()`). Paste it straight into a support ticket or a Slack message — no more manually copy-pasting six different fields out of the modal and re-formatting them.
 * Internal: Added `provider` column (`varchar(50) NULL`, indexed) to `{$wpdb->prefix}sendforce_logs`. `dbDelta` handles the schema migration automatically on plugin upgrade (no separate migration step needed; the existing `sendforce_maybe_upgrade_db` hook in the bootstrap re-runs `dbDelta` whenever the stored db_version is behind). The logger populates the column on every new entry from the captured debug payload (where the API mailer records the provider name) or, if that's missing, by looking up the active default connection's provider. Existing rows from before 1.0.30 keep the column as NULL — they continue to render as expected and just don't match the new provider filter.
 * Internal: New static method `SendForce_Logger::get_distinct_providers()` powers the dropdown by returning the distinct non-empty provider keys present in the log table. Cheap query thanks to the new index.
 
-## = 1.0.29 =
+### 1.0.29
+
+<sub>Released 19 May 2026</sub>
 
 * Fix: **Stray gray "pill" elements rendering on the What's New tab** (introduced in 1.0.28). On the in-admin Changelog accordion, floating empty `<code>` elements appeared down the left margin of the page as light-gray pill shapes against the WordPress admin's default `code, kbd { background: #f0f0f1 }` styling. Root cause: `sendforce_format_changelog_line()` converted backtick-delimited markdown to `<code>` tags via a regex, but didn't escape the captured group first — so any bullet that contained literal `<tag>` text inside backticks (very common in technical changelogs like ours, e.g. `` `[HTTP <code>] <body>` ``) ended up producing output like `<code>[HTTP <code>] <body></code>`. The browser saw the inner `<code>` as a real opening tag with no matching close and dragged it out to the top-level body, where it rendered as one of those gray pills.
 * The fix is small: run `esc_html()` on the raw bullet text BEFORE applying the markdown regex rules. Now any `<`/`>` inside backtick code spans becomes `&lt;`/`&gt;` first, and the only HTML tags in the final output are the controlled `<strong>` and `<code>` that the regex adds. Tag balance verified at 163/163 across all 27 releases of CHANGELOG.md content (was 165/163 before — exactly the 2 stray opens that produced the visible pills).
 * Affects 1.0.28 installs only. Earlier versions used a different parser path that didn't have this issue. 1.0.29 restores the expected clean layout.
 * Fix: **WordPress 6.7+ "Translation loading triggered too early" notice**. Two `cron_schedules` filter callbacks (in `class-sendforce-mailer.php::add_cron_schedule()` and `class-sendforce-activator.php::register_cron_schedule()`) returned the schedule's display label via `__( 'Every 5 Minutes (SendForce Mail Relay)', 'sendforce-mail-relay' )`. The `cron_schedules` filter can fire very early in the request lifecycle — `wp_schedule_event()`, `wp_next_scheduled()`, and anything that calls `wp_get_schedules()` triggers it, including code in `plugins_loaded` and `setup_theme` — well before our textdomain loads at `init`. WP 6.7 added a `_doing_it_wrong` notice when this happens, which is what users on WP 6.7+ with `WP_DEBUG` enabled were seeing. Fix: both callbacks now use a literal English string for the schedule's `display` value. That field is only ever rendered by admin dev tools (WP Crontrol, `wp-cli cron list`, the schedules debug panel in some hosting environments) — never to end users — so leaving it untranslated is the right tradeoff.
 
-## = 1.0.28 =
+### 1.0.28
+
+<sub>Released 17 May 2026</sub>
 
 * New: **Test send now shows the full provider response inline** on the Email Test page. When a test fails the headline shows the short reason ("Failed to send email via Microsoft 365 API") and a new **Provider response** panel below it shows the raw HTTP response body returned by the provider — pretty-printed when it's JSON, with a one-click **Copy** button for pasting into a support ticket. Previously the full Graph / SES / Mailgun response was only visible by clicking into the Email Log entry; users debugging a misconfiguration now see every detail they need without leaving the test page. The detection logic recognises `[HTTP <code>] <body>`, bare JSON bodies, and bare `AADSTS<code>:` lines so it works across all 18 providers.
 * New: **HTTPS warning on webhook URL fields** for the Slack, Discord, Microsoft Teams, Google Chat, and generic Webhook channels. As soon as you paste or type a URL starting with `http://` an inline red warning appears explaining that the alert message (site name, failed recipient address, error details — which can include API responses) would be sent over an unencrypted connection. Catches `http://` typos and homemade webhook receivers before the user saves a leaky config. The warning is informational only — the field still saves; it's nudging users toward HTTPS rather than enforcing it (some internal staging webhooks legitimately use http://).
@@ -168,12 +213,16 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Parser refactor: `sendforce_parse_changelog()` now delegates to either `sendforce_parse_changelog_from_md()` (new) or `sendforce_parse_changelog_from_readme()` (existing). Both produce the same `{version, bullets}` shape so the rest of the tab code is unchanged. Cached per-request via a static so repeated calls are free.
 * Resolves the "Changelog section is too long and was truncated. A maximum of 5,000 words is supported." warning the WordPress.org importer was showing on the plugin's public page.
 
-## = 1.0.27 =
+### 1.0.27
+
+<sub>Released 15 May 2026</sub>
 
 * Security (defense-in-depth): **Bulk-delete logs and queue retry/delete actions now require `manage_options` capability** in addition to the existing nonce check. The forms that issued these requests already live on admin-only pages, so a non-admin couldn't normally obtain a valid nonce — but explicit capability checks match WordPress.org Plugin Check expectations and protect against any future flow that might mint a nonce in a less-restricted context.
 * Privacy: **Email Log now stores only the filename basenames of attachments** instead of full filesystem paths. Previously rows like `/var/www/example.com/wp-content/uploads/woocommerce_uploads/2026/invoice-12345.pdf` were stored verbatim — leaking the server directory layout, shared-hosting username paths, and customer order IDs from WooCommerce invoice filenames. From 1.0.27 the same row stores only `invoice-12345.pdf`. Existing rows are not rewritten; only new log entries get basename-only.
 
-## = 1.0.26 =
+### 1.0.26
+
+<sub>Released 15 May 2026</sub>
 
 **Sending — attachments and multipart_text across all 18 API providers.**
 
@@ -197,14 +246,18 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * New: **Collapsible changelog accordion**, FAQ-style. Each release row shows version + change count; click to expand the bullets. The current installed version auto-expands; everything else stays collapsed by default — ~60% less vertical space than rendering everything flat. Uses native HTML `<details>`/`<summary>` so it's keyboard-accessible and works without JavaScript.
 * Renamed: "What's Next" → "What's New". The old `?tab=upcoming` and `?tab=changelog` URLs both still resolve as back-compat aliases so any bookmarks or in-plugin links keep working.
 
-## = 1.0.25 =
+### 1.0.25
+
+<sub>Released 13 May 2026</sub>
 
 * New: **Email attachments now work with Amazon SES API mode** (and continue to work with Gmail API mode). Previously the SES mailer ignored the `$attachments` parameter completely — WooCommerce PDF invoices, contact-form file uploads, LMS certificates, and similar plugin-generated attachments would silently disappear when sent via SES. Now they're MIME-encoded and delivered correctly via `multipart/mixed`. Gmail API mode also routes through the new shared MIME builder so its attachment handling matches.
 * New: **"Multi-Part Plain Text" setting now applies to SES and Gmail API modes**. When a connection is in API mode, an HTML email is now sent with both `text/html` and an auto-derived `text/plain` alternative (via `multipart/alternative`). Improves deliverability — Gmail and other inbox providers favour multipart-alternative messages, and plain-text-only mail clients (some IT environments, accessibility tools) get a readable fallback. Previously this setting was silently ignored in API mode.
 * Fix: **Subjects and From-names containing non-ASCII characters** (Café, résumé, François, Müller, 주문, etc.) are now RFC 2047 base64-encoded (`=?UTF-8?B?…?=`) before being sent. Without this, strict MTAs would reject the message and lenient ones would render the headers as garbage.
 * Refactor: SES and Gmail mailers now share a single `build_raw_mime()` helper in the base API mailer class. Same MIME format, same encoding rules, same attachment handling — verified against test fixtures covering single-part, multipart/alternative, multipart/mixed (with attachments), Bcc-in-headers (Gmail) vs Bcc-via-API (SES), and non-ASCII headers.
 
-## = 1.0.24 =
+### 1.0.24
+
+<sub>Released 10 May 2026</sub>
 
 * **Fix (critical for OAuth users): Microsoft 365 / Gmail "Connect with provider" no longer fails with `AADSTS50011` / redirect URI mismatch.** Root cause: the authorize URL was built with `add_query_arg()`, which does NOT URL-encode the values it inserts. The `&` characters inside our `redirect_uri` query value were left bare, so Microsoft / Google parsed `&tab=settings&sf_oauth=callback` as additional top-level query parameters and saw the `redirect_uri` truncated at the first `&`. The fix uses `http_build_query()` with `PHP_QUERY_RFC3986` so every value is properly percent-encoded. Affects every OAuth setup whose Web Redirect URI contains more than one query parameter (i.e. all current SendForce OAuth setups). The `get_redirect_uri()` hardening from 1.0.23 was real but addressed a different scenario; this is the actual cause of the AADSTS50011 reports.
 * New: **OAuth consent now opens in a popup window** instead of replacing the settings page. Click "Connect with provider" → a centered 600×720 popup opens with the Microsoft / Google sign-in flow → after consent the popup closes itself and the settings page refreshes with a success notice. You no longer lose your unsaved settings or scroll position.
@@ -224,14 +277,18 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Fix: **Tolerate users pasting `Bearer TOKEN` (instead of just `TOKEN`)** into the API Key field for SendGrid, Resend, MailerSend, SMTP.com, and SendLayer. Provider docs typically show `Authorization: Bearer xxxxx` in their cURL examples, and users frequently copy the whole `Bearer xxxxx` string. The mailer now strips a leading `Bearer ` if present so both paste styles work. Same auto-strip already applies to ZeptoMail's `Zoho-enczapikey ` prefix; refactored to use a shared `strip_auth_prefix()` helper in the base API mailer class.
 * Fix: **All API keys are now `trim()`ed automatically** before use. Catches the common case where a user copy-pastes a key from a provider dashboard and accidentally grabs trailing whitespace or a stray newline. Previously some providers (notably SendGrid) would return a generic 401 with no useful explanation when the auth header contained non-printable characters.
 
-## = 1.0.23 =
+### 1.0.23
+
+<sub>Released 9 May 2026</sub>
 
 * Fix: **Gmail / Microsoft 365 OAuth redirect URI is now constructed defensively** so security and caching plugins (e.g. Wordfence, LiteSpeed Cache) that filter `admin_url` cannot strip the query string from the path and produce a truncated `redirect_uri`. Resolves the intermittent `AADSTS50011` (redirect URI mismatch) errors some users hit when clicking "Connect with provider" for Microsoft 365. The final URL is unchanged — only the construction is now immune to third-party `admin_url` filters.
 * i18n: Email Log "Next run" timestamp now uses the site's configured **date/time format** (Settings → General) instead of a hardcoded English style. Sites running in non-English locales will now see the cleanup schedule formatted naturally.
 * Hardening: Expanded the `wp_kses` whitelist used to render channel logos on the Alerts tab — adds `xmlns:xlink`, `role`, `aria-label`, `width`, `height`, `fill-rule`, `clip-rule`, the `<g>` element, and a few missing path/circle attributes. No behaviour change for the bundled icons; future channel logos with these attributes will render instead of being silently stripped.
 * Tweak: `ajax_cleanup_logs_now` handler now explicitly `return`s after each `wp_send_json_error()`. `wp_send_json_error` already terminates via `wp_die`, so behaviour is unchanged — purely a clarity improvement.
 
-## = 1.0.21 =
+### 1.0.21
+
+<sub>Released 8 May 2026</sub>
 
 * New: **"Clean Now" button on the Email Log**. Run the auto-clean immediately instead of waiting for the next scheduled cron — useful after lowering retention or before exporting logs. Backed by a new `sendforce_cleanup_logs_now` AJAX endpoint (capability + nonce protected) that reports how many rows were removed.
 * New: **Auto-clean status row above the Email Log table** — at a glance shows the configured retention period, when the next automatic cleanup is scheduled, a deep-link to change the setting, and the "Clean Now" action.
@@ -245,13 +302,17 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Tweak: Summary Email body textarea reduced from 3 rows to 2 so the Alerts form fits more cleanly on smaller viewports.
 * Internal: Email-log retention cleanup (`SendForce_Logger::cleanup_old_logs()`) now returns the number of rows deleted (was void) so callers like the new "Clean Now" handler can surface the count to the user.
 
-## = 1.0.20 =
+### 1.0.20
+
+<sub>Released 3 May 2026</sub>
 
 * Fix: Admin top navigation bar layout at narrow widths — resolved overlap with the WordPress admin bar on tablet/mobile, removed an oversized empty gap above the SendForce header, and prevented horizontal page scroll when tab labels would otherwise overflow on mid-size laptop screens.
 * Tweak: Tab labels now collapse to icon-only mode below 1340px (was 1180px) so all tabs fit cleanly without scrolling on common laptop widths.
 * Tweak: Logo gets proper left breathing room on mobile — no more flush-to-edge.
 
-## = 1.0.19 =
+### 1.0.19
+
+<sub>Released 3 May 2026</sub>
 
 * New: **Smart Routing Rules**. Send different emails through different connections based on rules you define. Conditions: recipient domain, recipient pattern (glob), source plugin (auto-detected for WooCommerce, Contact Form 7, WPForms, Gravity Forms, Ninja Forms, Fluent Forms, Forminator, Easy Digital Downloads, MemberPress, LearnDash, MailPoet, BuddyPress, bbPress and more), subject contains, time of day, weekday. Rules evaluated top-down — first match wins. If no rule matches, the email goes through your Primary connection (existing behaviour preserved).
 * New "Routing" tab in the admin (sidebar submenu) with rule list, per-rule add / edit / delete, enable/disable toggle, and a built-in "Test Routing" tool that lets you paste a sample recipient + subject + source plugin and see exactly which rule (if any) would fire and which connection would be used.
@@ -267,52 +328,70 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Improvement: better keyboard support and focus management for routing dialogs (Esc to cancel, Enter to confirm).
 * Improvement: navigation collapses to icon-only buttons on medium-width screens so all tabs fit cleanly without overflow.
 
-## = 1.0.18 =
+### 1.0.18
+
+<sub>Released 2 May 2026</sub>
 
 * Fixed a misleading "Connected" status on the Gmail / Microsoft 365 OAuth panel. The panel previously showed "Connected" (green) whenever the connection's password field had any value — including when the value was a leftover SMTP password from a previous SMTP-mode setup or a refresh token without matching Client ID / Secret. The check is now strict: green "Connected" only renders when the connection is in API mode AND a Client ID is present AND a Client Secret is stored AND a refresh token is stored.
 * Added a new amber state — "Connection has a stored OAuth token but the Client ID or Client Secret is missing. Re-enter your OAuth credentials and click Reconnect." — for the partial-credentials edge case (only fires in API mode, so an SMTP password is never mistaken for an orphaned OAuth token).
 * The OAuth panel now shows a friendly "Switch the connection to API mode above to use OAuth" hint when a Gmail / Microsoft 365 connection is still in SMTP mode.
 * Polished the OAuth status indicator dot — larger (12px), stronger glow, properly aligned with the first line when the status text wraps to multiple lines, deeper text colours for better contrast.
 
-## = 1.0.17 =
+### 1.0.17
+
+<sub>Released 2 May 2026</sub>
 
 * Initialize the `oauth_email` field on newly created connections so the schema is consistent from the moment a connection is saved (was previously added only after the first OAuth completes — defensive code in JS handled the missing key, but the data shape was inconsistent).
 
-## = 1.0.16 =
+### 1.0.16
+
+<sub>Released 2 May 2026</sub>
 
 * New: **One-click "Connect with Google" and "Connect with Microsoft" OAuth buttons** for the Gmail and Microsoft 365 connections. Replaces the previous (very painful) workflow of generating refresh tokens manually via OAuth Playground or Azure CLI. The user pastes their Client ID + Client Secret once, clicks Connect, signs in, grants consent, and is done.
 * The OAuth refresh token is captured automatically and stored encrypted in the connection. The connection panel shows "Connected as user@example.com" with a Disconnect button. No third-party OAuth proxy involved — bring-your-own-credentials model, every site retains full control of its own Google Cloud / Azure AD app.
 * Microsoft 365: the API now supports **both delegated (authorization_code) and app-only (client_credentials) flows**, picked automatically based on whether a refresh token is stored. Existing Application-permission setups keep working unchanged.
 * Setup help panel inline in the connection form: step-by-step instructions for creating the Google Cloud / Azure AD app, plus the exact redirect URI to register, with a click-to-select copy box.
 
-## = 1.0.15 =
+### 1.0.15
+
+<sub>Released 1 May 2026</sub>
 
 * Audited all 20 provider integrations (SendGrid, Mailgun, Brevo, SparkPost, Postmark, Amazon SES, Elastic Email, SMTP2GO, Pepipost/Netcore, SMTP.com, SocketLabs, Moosend, Microsoft 365, Gmail, SendLayer, Mailjet, MailerSend, Mandrill, Resend, Zoho ZeptoMail) against current provider documentation. 18 of 20 verified spec-compliant; 1 minor fix below.
 * Fixed Moosend HTML content-type detection. The Moosend API treats an unset `IsContentHtml` flag inconsistently — now set explicitly in BOTH HTML and plain-text paths so the rendering matches what the user sent. Previously HTML emails sent via Moosend could render as plain text in some accounts.
 
-## = 1.0.14 =
+### 1.0.14
+
+<sub>Released 1 May 2026</sub>
 
 * Fixed an Email Queue bug where rows that entered "processing" state and then never completed (because the cron run timed out, the PHP process crashed, or the server restarted mid-batch) became orphaned forever. Each row claimed by the processor now carries a 10-minute lease (stored in `next_retry_at`); on the next cron run any rows whose lease has expired are automatically returned to the queue and retried.
 
-## = 1.0.13 =
+### 1.0.13
+
+<sub>Released 1 May 2026</sub>
 
 * Security: hardened the PHP-mail fallback path against header injection. Carriage-return / line-feed / null characters are now stripped from the To, Subject and every individual header line before being passed to mail(), preventing a malicious wp_mail filter from injecting BCC / CC / spoofed headers via embedded newlines.
 * Security: validated attachment paths in the SMTP fallback path. Attachments are now only added when the resolved path lies inside a known-safe root (ABSPATH, WP_CONTENT_DIR, WP_PLUGIN_DIR, the uploads directory, or the system temp dir), preventing a path-traversal attack from a malicious upstream filter that could otherwise read arbitrary OS files.
 * Security: sanitized the fallback-connection label on read with `sanitize_text_field()` so any HTML stored in the option (by any means) cannot leak into admin UI surfaces.
 * Defense-in-depth: provider error messages echoed back into the test-email response are now run through `wp_strip_all_tags()` before being sent to the browser. The client already renders them via `.text()` so XSS was already blocked, but stripping tags server-side keeps the audit trail clean.
 
-## = 1.0.12 =
+### 1.0.12
+
+<sub>Released 1 May 2026</sub>
 
 * Renamed "Default Connection" to "Primary Connection" throughout the admin UI for clearer terminology (the connection-row badge, the General Settings section heading, helper text, and the About page). The internal storage key remains `default_connection` so existing user data is preserved without migration.
 * Provider status dot on the Email Test page now reflects the connection STATUS (green when configured, red when not) rather than the provider's brand colour. Fixes the misleading red dot next to providers like Google and Mailgun whose brand happens to be red.
 * Fixed the fallback-connection flow so `wp_mail()` correctly returns `true` when the primary fails but the fallback succeeds. The test-email UI now shows a clear "Test email sent via the fallback connection (X). The primary connection (Y) failed; the fallback recovered the send." message instead of misleading the user with the primary failure.
 * Suppressed the "WARNING: SMTP connection may not have completed properly" message when the active send path was API or PHP-Mail (it never applied to those modes; it was firing incorrectly).
 
-## = 1.0.11 =
+### 1.0.11
+
+<sub>Released 1 May 2026</sub>
 
 * Fixed cluttered display on the WordPress admin Plugins page. The `Plugin Name:` header is now the clean brand name "SendForce Mail Relay" (was the long SEO title), and the `Description:` header is a single-line summary instead of the full provider list. The long SEO title remains on the WordPress.org directory listing page for search visibility.
 
-## = 1.0.10 =
+### 1.0.10
+
+<sub>Released 1 May 2026</sub>
 
 * Added a UI control for the **Developer Debug** setting in Settings → Queue & Logging. Previously the value was honored by the mailer code but had no admin toggle.
 * Added a UI control for **Max Retry Attempts** (1–10) in the Email Queue section. Previously the queue read this value but there was no field to set it.
@@ -322,18 +401,24 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Default and Fallback connection selectors automatically refresh after adding or saving a connection (the styled UI gets the new option immediately, no page reload needed).
 * Polished form-control styling: cleaner chevron arrow, brand-teal focus ring, hover state on the arrow icon, and disabled state for inputs and selects. Edit row buttons now use the brand teal on hover (was indigo).
 
-## = 1.0.9 =
+### 1.0.9
+
+<sub>Released 1 May 2026</sub>
 
 * Adjusted the WordPress.org listing title for directory search. The product brand remains "SendForce Mail Relay" everywhere users see it (page titles, About page, alerts, email subjects).
 
-## = 1.0.8 =
+### 1.0.8
+
+<sub>Released 30 April 2026</sub>
 
 * New feature: **Automatic fallback connection.** The fallback dropdown in Settings → Connections is now wired to real send logic. When the primary connection's send fails, SendForce immediately retries via the configured fallback connection — works across any combination of API → API, API → SMTP, SMTP → API, SMTP → SMTP, or any → PHP mail.
 * The original failed attempt is still recorded in the Email Log; if the fallback succeeds, a second "sent" log row is created with a "Recovered via fallback connection" badge so you have a complete audit trail.
 * Refactored connection resolution into a shared `merge_connection_into()` helper; reduces duplication and makes the fallback path use the exact same config-merge rules as the primary.
 * Improved long-form Description in readme for better WordPress.org discoverability (added "Why SendForce", reorganized provider list by API vs SMTP, added "Works with all major WordPress plugins" section listing WooCommerce, Contact Form 7, WPForms, Gravity Forms, Elementor Forms, MemberPress, LearnDash, BuddyPress and more).
 
-## = 1.0.7 =
+### 1.0.7
+
+<sub>Released 30 April 2026</sub>
 
 * Adjusted the public plugin display name for WordPress.org directory search. Internal slug, code, classes, and admin sidebar label are unchanged.
 * Rewrote the short description and `Description:` plugin header for better discoverability.
@@ -341,18 +426,22 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Polished the connection-row Edit / Delete buttons with dashicons, hover states, and proper destructive styling for the delete action.
 * Added sub-menu entries (Dashboard, Settings, Email Log, Email Queue, Email Test, Alerts) under the SF Mail Relay sidebar item, plus a `submenu_file` filter so the active tab is highlighted correctly when deep-linked.
 
-## = 1.0.6 =
+### 1.0.6
+
+<sub>Released 30 April 2026</sub>
 
 * Shortened the WordPress admin sidebar label from "SendForce Mail Relay" to "SF Mail Relay" so it fits on a single line. The full plugin name is preserved everywhere else (page title, dashboard widget, alerts, email subjects).
 * Added sub-menu entries under SF Mail Relay — Dashboard, Settings, Email Log, Email Queue, Email Test, Alerts — so each tab is reachable directly from the sidebar fly-out.
 
-## = 1.0.5 =
+### 1.0.5
+
+<sub>Released 30 April 2026</sub>
 
 * Removed an accidentally bundled macOS `.DS_Store` file from `assets/images/providers/`.
 * Added explicit `phpcs:ignore` annotations with rationale to four `$wpdb` queries in `includes/class-sendforce-cli.php` and `includes/class-sendforce-sysinfo.php` where the table name is interpolated from `$wpdb->prefix` plus a hardcoded literal (no user input).
 * Restructured the WP-CLI `log delete --before` query onto a single line so the existing `phpcs:ignore` directive correctly suppresses the `InterpolatedNotPrepared` warning on the prepared inner statement.
 
-## = 1.0.4 =
+### 1.0.4
 
 * Updated bundled Chart.js from 4.4.0 to 4.5.0.
 * Rewrote the External Services section in readme.txt to fully document every email provider, notification channel, and bundled library — including SendLayer, MailerSend, Mailjet, Mandrill, Resend, Zoho ZeptoMail, Microsoft 365 Graph, Gmail API, Telegram, Pushover, Slack, Discord, Microsoft Teams, Google Chat, and Custom Webhook — with verified privacy and terms-of-service URLs for each.
@@ -365,7 +454,7 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Gated the on-load DB schema upgrade routine to admin / WP-CLI context only.
 * Added confirmation prompts to the destructive WP-CLI commands `wp sendforce queue clear` and `wp sendforce log delete`.
 
-## = 1.0.3 =
+### 1.0.3
 
 * Added WP-CLI commands: `wp sendforce test`, `wp sendforce queue process|stats|clear`, `wp sendforce log list|tail|delete|count`, `wp sendforce sysinfo`.
 * Added developer hooks: `sendforce_before_send`, `sendforce_after_send`, `sendforce_log_entry` filter, `sendforce_api_request`, `sendforce_api_response`.
@@ -376,7 +465,7 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Replaced stale "SMTP-Manager" User-Agent on Resend API requests with "SendForce-Mail-Relay".
 * Added one-time DB upgrade routine to add the `debug_data` column on existing installs.
 
-## = 1.0.1 =
+### 1.0.1
 
 * Fixed conflict detection banner not showing on all admin pages.
 * Fixed test email branding from "SMTPFlow" to "SendForce Mail Relay".
@@ -393,7 +482,7 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Fixed all WordPress Plugin Check errors and warnings.
 * Renamed main plugin file to sendforce-mail-relay.php.
 
-## = 1.0.0 =
+### 1.0.0
 
 * Initial release.
 * SMTP configuration with 18 provider presets and one-click setup.
@@ -405,3 +494,5 @@ A consolidated release rolling up the credential-encryption hardening, the fixes
 * Encrypted password and API key storage (AES-256-CBC).
 * Auto log cleanup with configurable retention period.
 * Modern admin dashboard with connection status and 7-day send chart.
+
+</details>

@@ -377,7 +377,7 @@ We recommend adding a note to your site's privacy policy if you log email conten
 
 == Changelog ==
 
-For the **complete** release history with full detail on every change, see [CHANGELOG.md](https://plugins.svn.wordpress.org/sendforce-mail-relay/trunk/CHANGELOG.md) (also bundled with the plugin) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
+For the **complete** release history with full detail on every change, see the [full changelog on GitHub](https://github.com/ShiponKarmakar/SendForce/blob/main/CHANGELOG.md) (also bundled with the plugin as CHANGELOG.md) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
 
 = 1.2.1 =
 * Fixed: with "Multi-Part Plain Text" turned on, plain-text emails (password resets, notifications, the test email) were delivered as HTML on SMTP and PHP Mail connections. The option now only applies to HTML emails, as intended. Thanks to @dimalifragis for the report.

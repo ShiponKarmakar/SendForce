@@ -52,10 +52,10 @@ if ( ! function_exists( 'sendforce_parse_changelog' ) ) {
 }
 
 /**
- * Parse a CHANGELOG.md file. Expects WordPress-readme-style version headings
- * wrapped in `## = X.Y.Z =` (the same `= X.Y.Z =` we use in readme.txt, just
- * promoted to a Markdown level-2 heading so the file renders nicely on
- * GitHub / in any Markdown viewer).
+ * Parse a CHANGELOG.md file. Each release starts at a `## X.Y.Z` (or
+ * `### X.Y.Z`) heading; only `*`-prefixed lines below it become entries, so
+ * the GitHub-only presentation around them — release-date lines, the jump
+ * index, `<details>` wrappers — is ignored here by construction.
  *
  * @param string $path Absolute path to CHANGELOG.md.
  * @return array Same shape as sendforce_parse_changelog().
@@ -64,8 +64,13 @@ if ( ! function_exists( 'sendforce_parse_changelog_from_md' ) ) {
 	function sendforce_parse_changelog_from_md( $path ) {
 		$contents = (string) file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 
-		// Match `## = X.Y[.Z] =` headings (Markdown-promoted readme-style).
-		$pattern = '/^##\s*=\s*([0-9]+(?:\.[0-9]+){1,2})\s*=\s*$/m';
+		// Match a version heading. Accepted forms:
+		// `## 1.2.1` / `### 1.0.40` — current layout (### for releases folded
+		// into the collapsible "Earlier releases" block on GitHub), and
+		// `## = 1.2.1 =` — the original readme-style form, kept so an older
+		// file still parses. The heading must END at the version: a heading
+		// like "## Earlier releases (1.0.x)" is a section title, not a release.
+		$pattern = '/^#{2,3}[ \t]*(?:=[ \t]*)?([0-9]+(?:\.[0-9]+){1,2})(?:[ \t]*=)?[ \t]*$/m';
 		if ( ! preg_match_all( $pattern, $contents, $matches, PREG_OFFSET_CAPTURE ) ) {
 			return array();
 		}
