@@ -1,0 +1,3 @@
+# Files kept in the GitHub repository but not shipped to WordPress.org.
+# SVNRel already skips .git, .gitignore, .github and this file itself.
+README.md
