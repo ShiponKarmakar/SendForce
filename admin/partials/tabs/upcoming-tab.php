@@ -83,13 +83,7 @@ $sendforce_roadmap = array(
 		'status' => 'planned',
 	),
 
-	// ---- Migration + sending caps + SMS ----
-	array(
-		'title'  => __( 'More plugins to import from', 'sendforce-mail-relay' ),
-		'blurb'  => __( 'Importing from WP Mail SMTP, FluentSMTP and Easy WP SMTP shipped in 1.1.3. Next: Post SMTP Mailer, SMTP Mailer and WP SMTP.', 'sendforce-mail-relay' ),
-		'icon'   => 'dashicons-migrate',
-		'status' => 'planned',
-	),
+	// ---- Sending caps + SMS ----
 	array(
 		'title'  => __( 'Hourly, daily & monthly sending caps', 'sendforce-mail-relay' ),
 		'blurb'  => __( 'Per-minute pacing per connection shipped in 1.1.0. Next: hour, day and month caps, so a connection never exceeds a provider quota such as Gmail\'s daily sending limit. Overflow stays queued for the next window.', 'sendforce-mail-relay' ),

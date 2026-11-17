@@ -15,7 +15,7 @@ Any SMTP server, PHP Mail, or the native API of: Amazon SES, Brevo, Elastic Emai
 - Smart Routing: send different mail through different connections
 - Fallback connection when the primary fails
 - Failure alerts by email, Telegram, Slack, Discord, Microsoft Teams, Google Chat, Pushover or a custom webhook
-- One-click import from WP Mail SMTP, FluentSMTP and Easy WP SMTP
+- One-click import from WP Mail SMTP, FluentSMTP, Easy WP SMTP, Post SMTP, SMTP Mailer and WP SMTP (Kadence Mail)
 - Simulation Mode for staging sites
 - WP-CLI commands and Multisite support
 

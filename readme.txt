@@ -77,7 +77,7 @@ https://youtu.be/dUv4HolX5dk
 * **Failure alerts** — push delivery failures to Telegram, Slack, Discord, Microsoft Teams, Google Chat, Pushover, or any custom webhook.
 * **Sender Identity override** — force every email to use a custom From name and From address site-wide.
 * **Conflict detection** — warns you if another SMTP plugin (WP Mail SMTP, FluentSMTP, Easy WP SMTP, Post SMTP, etc.) is active so you can deactivate it before things break.
-* **Import from WP Mail SMTP, FluentSMTP and Easy WP SMTP** — switch in one click: connections, credentials, sender identity, fallback and FluentSMTP's per-sender routing come across, with a preview first and nothing in SendForce overwritten.
+* **Import from WP Mail SMTP, FluentSMTP, Easy WP SMTP, Post SMTP, SMTP Mailer and WP SMTP** — switch in one click: connections, credentials, sender identity, fallback and per-sender routing (FluentSMTP, WP SMTP) come across, with a preview first and nothing in SendForce overwritten.
 * **Encrypted credential storage** — SMTP passwords and API keys are encrypted at rest using AES-256-CBC with a dedicated per-site key, so they survive security-key/salt regeneration.
 * **WP-CLI commands** — send test emails, process and inspect the queue, view or clean up the email log, and export system info from the command line. See the FAQ for the full list.
 * **Developer hooks** — `sendforce_before_send`, `sendforce_after_send`, `sendforce_log_entry`, `sendforce_api_request`, `sendforce_api_response` for extending the plugin without forking.
@@ -135,9 +135,9 @@ All plugin data (database tables, settings, and scheduled events) is completely 
 
 If you set a From email in Settings → Sender Identity, every email uses it, on every connection and every Smart Routing rule. If you leave it empty, each email keeps the From address the sending plugin chose (for example WooCommerce's store address); emails that don't set one use your site's admin email. Smart Routing never changes the From — it only picks which connection sends. Gmail and Microsoft 365 API connections always send as the connected account. Your email provider must accept the From you use: most only allow addresses on domains you've verified with them.
 
-= Can I import my settings from WP Mail SMTP, FluentSMTP or Easy WP SMTP? =
+= Can I import my settings from another SMTP plugin? =
 
-Yes. While the other plugin is still active, click **Import settings** — in the notice SendForce shows, or any time under **SendForce → Settings → Import from another plugin** (still there after you dismiss the notice). There is also a WP-CLI command, `wp sendforce import run <source>`, which is handy for staging sites and bulk work. On Multisite you import per site, and if WP Mail SMTP or Easy WP SMTP is set to one network-wide configuration, only a network administrator can import it. It previews exactly what will come across, then adds the connections (credentials re-encrypted with SendForce's own key), sender identity and fallback; FluentSMTP's per-sender routing becomes Smart Routing rules. Nothing already in SendForce is overwritten, and importing twice doesn't create duplicates. Gmail and Microsoft 365 API connections need one extra step: click Connect in SendForce to sign in again (Gmail or Outlook over SMTP with an app password imports as-is). If you used Easy WP SMTP's One-Click Setup, there are no app credentials saved on your site to copy, so SendForce asks you to create your own Google or Microsoft app. Credentials you keep in wp-config.php are not copied into the database — you'll be asked to enter them. Send a test email from SendForce, then deactivate the other plugin.
+Yes, from six plugins. While the other plugin is still active, click **Import settings** — in the notice SendForce shows, or any time under **SendForce → Settings → Import from another plugin** (still there after you dismiss the notice). There is also a WP-CLI command, `wp sendforce import run <source>`, which is handy for staging sites and bulk work. On Multisite you import per site, and if WP Mail SMTP or Easy WP SMTP is set to one network-wide configuration, only a network administrator can import it. Supported: WP Mail SMTP, FluentSMTP, Easy WP SMTP, Post SMTP, SMTP Mailer and WP SMTP (now called Kadence Mail). It previews exactly what will come across, then adds the connections (credentials re-encrypted with SendForce's own key), sender identity and fallback; per-sender routing from FluentSMTP and WP SMTP becomes Smart Routing rules. Mailers SendForce doesn't support are listed in the preview and left out. Nothing already in SendForce is overwritten, and importing twice doesn't create duplicates. Gmail and Microsoft 365 API connections need one extra step: click Connect in SendForce to sign in again (Gmail or Outlook over SMTP with an app password imports as-is). If you used Easy WP SMTP's One-Click Setup, there are no app credentials saved on your site to copy, so SendForce asks you to create your own Google or Microsoft app. Credentials you keep in wp-config.php are not copied into the database — you'll be asked to enter them. Send a test email from SendForce, then deactivate the other plugin.
 
 = Does it support WP-CLI? =
 
@@ -380,6 +380,7 @@ We recommend adding a note to your site's privacy policy if you log email conten
 For the **complete** release history with full detail on every change, see the [full changelog on GitHub](https://github.com/ShiponKarmakar/SendForce/blob/main/CHANGELOG.md) (also bundled with the plugin as CHANGELOG.md) or open the **What's New** tab inside SendForce in your WordPress admin. The section below is condensed to fit within WordPress.org's 5,000-word changelog limit.
 
 = 1.2.3 =
+* New: Import from Post SMTP, SMTP Mailer and WP SMTP (Kadence Mail): connections, credentials, sender, fallback and WP SMTP's per-sender routing, with a preview first and nothing in SendForce overwritten.
 * Fixed: Saving a new connection could create it twice if the same request reached the server twice, for example a browser retry, or clicking Save again after a "Request failed" message when the save had gone through.
 * Changed: The 1.0.x entries in this changelog are now one summary, and old upgrade notices are removed, to stay within WordPress.org's limit. The full history is in CHANGELOG.md.
 
@@ -442,7 +443,7 @@ For the **complete** release history with full detail on every change, see the [
 == Upgrade Notice ==
 
 = 1.2.3 =
-Fixes a new connection sometimes being saved twice.
+Adds import from Post SMTP, SMTP Mailer and WP SMTP, and fixes a new connection sometimes being saved twice.
 
 = 1.2.2 =
 Fixes emails from plugins like Directorist showing raw HTML code when the Email Queue is on or an API provider is used. Adds a choice of Email Queue send interval.

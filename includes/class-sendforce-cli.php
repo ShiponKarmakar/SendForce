@@ -244,7 +244,8 @@ class SendForce_CLI {
 	 * : One of: list, preview, run.
 	 *
 	 * [<source>]
-	 * : Source plugin for preview/run: wp-mail-smtp or fluent-smtp.
+	 * : Source plugin for preview/run: wp-mail-smtp, fluent-smtp, easy-wp-smtp,
+	 * post-smtp, smtp-mailer or wp-smtp.
 	 *
 	 * [--yes]
 	 * : Skip the confirmation prompt when running an import.

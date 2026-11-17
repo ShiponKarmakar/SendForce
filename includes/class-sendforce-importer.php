@@ -13,13 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class SendForce_Importer
  *
- * Reads WP Mail SMTP and FluentSMTP settings through each plugin's own API —
- * never their raw options. Both encrypt credentials (WP Mail SMTP: the SMTP
- * password, with libsodium; FluentSMTP: most secrets, with AES and rules that
- * depend on the version a value was saved under), and both let wp-config.php
- * constants override saved values. Their own readers handle all of that and
- * keep working when they change it, which is why the source plugin must be
- * active to import.
+ * Reads each source plugin's settings through that plugin's own API — never
+ * its raw options. Most encrypt or encode credentials (WP Mail SMTP and Easy
+ * WP SMTP: the SMTP password, with libsodium; FluentSMTP: most secrets, with
+ * AES and rules that depend on the version a value was saved under; Post SMTP
+ * and SMTP Mailer: base64), and several let wp-config.php constants override
+ * saved values. Their own readers handle all of that and keep working when
+ * they change it, which is why the source plugin must be active to import.
  *
  * Flow: plan() works out what would be imported, preview() is the same with
  * secrets removed (shown to the admin first), import() writes it. Importing
@@ -36,6 +36,9 @@ class SendForce_Importer {
 		'wp-mail-smtp' => 'WP Mail SMTP',
 		'fluent-smtp'  => 'FluentSMTP',
 		'easy-wp-smtp' => 'Easy WP SMTP',
+		'post-smtp'    => 'Post SMTP',
+		'smtp-mailer'  => 'SMTP Mailer',
+		'wp-smtp'      => 'WP SMTP (Kadence Mail)',
 	);
 
 	/**
@@ -70,8 +73,15 @@ class SendForce_Importer {
 		if ( isset( self::OPTIONS_API_SOURCES[ $source ] ) ) {
 			return class_exists( self::OPTIONS_API_SOURCES[ $source ] . 'Options' );
 		}
-		if ( 'fluent-smtp' === $source ) {
-			return function_exists( 'fluentMailGetSettings' );
+		switch ( $source ) {
+			case 'fluent-smtp':
+				return function_exists( 'fluentMailGetSettings' );
+			case 'post-smtp':
+				return class_exists( 'PostmanOptions' ) && is_callable( array( 'PostmanOptions', 'getInstance' ) );
+			case 'smtp-mailer':
+				return function_exists( 'smtp_mailer_get_option' );
+			case 'wp-smtp':
+				return class_exists( '\SolidWP\Mail\Repository\ProvidersRepository' );
 		}
 		return false;
 	}
@@ -304,6 +314,12 @@ class SendForce_Importer {
 			restore_current_blog();
 		} elseif ( isset( self::OPTIONS_API_SOURCES[ $source ] ) ) {
 			$plan = self::plan_options_api( $source );
+		} elseif ( 'post-smtp' === $source ) {
+			$plan = self::plan_post_smtp();
+		} elseif ( 'smtp-mailer' === $source ) {
+			$plan = self::plan_smtp_mailer();
+		} elseif ( 'wp-smtp' === $source ) {
+			$plan = self::plan_wp_smtp();
 		} else {
 			$plan = self::plan_fluent_smtp();
 		}
@@ -592,6 +608,266 @@ class SendForce_Importer {
 	}
 
 	// ---------------------------------------------------------------------
+	// Post SMTP
+	// ---------------------------------------------------------------------
+
+	/**
+	 * Post SMTP has one active transport plus an optional fallback SMTP server.
+	 * PostmanOptions decodes every stored secret (they are base64, some twice),
+	 * applies its POST_SMTP_* wp-config.php constants, and on Multisite reads
+	 * the network's shared settings when those are switched on.
+	 *
+	 * @return array
+	 */
+	private static function plan_post_smtp() {
+		$o     = PostmanOptions::getInstance();
+		$label = self::SOURCES['post-smtp'];
+		$type  = (string) $o->getTransportType();
+		$notes = array();
+
+		// A secret set as a wp-config.php constant is not copied into the
+		// database. Every API getter returns POST_SMTP_API_KEY when it is set.
+		$wpconfig_note = __( 'A credential is set in wp-config.php and was not copied. Enter it in this connection.', 'sendforce-mail-relay' );
+		$secret        = function ( $getter, $constant = 'POST_SMTP_API_KEY' ) use ( $o, &$notes, $wpconfig_note ) {
+			if ( defined( $constant ) ) {
+				$notes['wpconfig'] = $wpconfig_note;
+				return '';
+			}
+			return (string) $o->$getter();
+		};
+
+		$api = array(
+			'sendgrid_api'     => array( 'sendgrid', 'getSendGridApiKey' ),
+			'sendinblue_api'   => array( 'brevo', 'getSendinblueApiKey' ),
+			'mandrill_api'     => array( 'mandrill', 'getMandrillApiKey' ),
+			'mailersend_api'   => array( 'mailersend', 'getMailerSendApiKey' ),
+			'postmark_api'     => array( 'postmark', 'getPostmarkApiKey' ),
+			'resend_api'       => array( 'resend', 'getResendApiKey' ),
+			'sparkpost_api'    => array( 'sparkpost', 'getSparkPostApiKey' ),
+			'elasticemail_api' => array( 'elasticemail', 'getElasticEmailApiKey' ),
+			'smtp2go_api'      => array( 'smtp2go', 'getSmtp2GoApiKey' ),
+		);
+
+		$conn = null;
+		if ( 'default' === $type ) {
+			$conn = self::conn( 'phpmail', 'smtp' );
+		} elseif ( 'smtp' === $type ) {
+			$host = strtolower( trim( (string) $o->getHostname() ) );
+			if ( $o->isAuthTypeOAuth2() && 'smtp.gmail.com' === $host ) {
+				// Post SMTP's Gmail sign-in over SMTP. SendForce signs in to the
+				// same Google app through the Gmail API instead.
+				$conn                    = self::conn( 'gmail', 'api' );
+				$conn['gmail_client_id'] = (string) $o->getClientId();
+				$conn['api_key']         = (string) $o->getClientSecret();
+			} else {
+				$user = defined( 'POST_SMTP_AUTH_USERNAME' ) ? '' : (string) $o->getUsername();
+				$pass = $secret( 'getPassword', 'POST_SMTP_AUTH_PASSWORD' );
+				if ( defined( 'POST_SMTP_AUTH_USERNAME' ) ) {
+					$notes['wpconfig'] = $wpconfig_note;
+				}
+				if ( $o->isAuthTypeOAuth2() ) {
+					$pass            = '';
+					$notes['oauth2'] = __( 'This server used an OAuth sign-in over SMTP, which SendForce does not support. Enter the account password or an app password in this connection.', 'sendforce-mail-relay' );
+				}
+				$conn = self::smtp_conn( $host, $o->getPort(), (string) $o->getEncryptionType(), ! $o->isAuthTypeNone(), $user, $pass, '' );
+			}
+		} elseif ( 'gmail_api' === $type ) {
+			$conn                    = self::conn( 'gmail', 'api' );
+			$conn['gmail_client_id'] = (string) $o->getClientId();
+			$conn['api_key']         = (string) $o->getClientSecret();
+		} elseif ( isset( $api[ $type ] ) ) {
+			$conn            = self::conn( $api[ $type ][0], 'api' );
+			$conn['api_key'] = $secret( $api[ $type ][1] );
+			// getSendGridRegion() returns the API key constant when one is set,
+			// so only trust it when the key came from the database.
+			if ( 'sendgrid_api' === $type && ! defined( 'POST_SMTP_API_KEY' ) && 'EU' === strtoupper( (string) $o->getSendGridRegion() ) ) {
+				$notes['region'] = __( 'This SendGrid account is on the EU region, which SendForce does not support yet. The key was copied, but sending through it will fail.', 'sendforce-mail-relay' );
+			}
+		} elseif ( 'mailgun_api' === $type ) {
+			$conn                   = self::conn( 'mailgun', 'api' );
+			$conn['api_key']        = $secret( 'getMailgunApiKey' );
+			$conn['mailgun_domain'] = (string) $o->getMailgunDomainName();
+			// Post SMTP stores the EU region as a ticked checkbox: any value means EU.
+			$conn['mailgun_region'] = null !== $o->getMailgunRegion() ? 'eu' : 'us';
+		} elseif ( 'mailjet_api' === $type ) {
+			$conn             = self::conn( 'mailjet', 'api' );
+			$conn['username'] = $secret( 'getMailjetApiKey' );    // Public key.
+			$conn['api_key']  = $secret( 'getMailjetSecretKey' ); // Both read POST_SMTP_API_KEY when set.
+		} elseif ( 'smtpcom_api' === $type ) {
+			$conn                    = self::conn( 'smtpcom', 'api' );
+			$conn['api_key']         = $secret( 'getSmtpcomApiKey' );
+			$conn['smtpcom_channel'] = (string) $o->getSmtpcomChannel();
+		}
+
+		$items = array();
+		if ( null === $conn ) {
+			$items[] = self::unsupported( 'postsmtp:' . $type, $type, $label );
+		} elseif ( '' !== $type ) {
+			$items[] = self::item( 'postsmtp:' . $type, $conn, 'primary', $label, array_values( $notes ) );
+		}
+
+		// The fallback SMTP server, used when the main transport fails.
+		if ( 'yes' === $o->getFallbackIsEnabled() && '' !== trim( (string) $o->getFallbackHostname() ) ) {
+			$fb_notes = array();
+			$fb_auth  = 'none' !== $o->getFallbackAuth();
+			$fb_user  = (string) $o->getFallbackUsername();
+			$fb_pass  = (string) $o->getFallbackPassword();
+			if ( defined( 'POST_SMTP_FALLBACK_AUTH_PASSWORD' ) || defined( 'POST_SMTP_FALLBACK_AUTH_USERNAME' ) ) {
+				$fb_user    = defined( 'POST_SMTP_FALLBACK_AUTH_USERNAME' ) ? '' : $fb_user;
+				$fb_pass    = defined( 'POST_SMTP_FALLBACK_AUTH_PASSWORD' ) ? '' : $fb_pass;
+				$fb_notes[] = $wpconfig_note;
+			}
+			$fb_conn = self::smtp_conn( $o->getFallbackHostname(), $o->getFallbackPort(), (string) $o->getFallbackSecurity(), $fb_auth, $fb_user, $fb_pass, '' );
+			$items[] = self::item( 'postsmtp:fallback', $fb_conn, 'fallback', $label, $fb_notes );
+		}
+
+		return array(
+			'items'  => $items,
+			'sender' => array(
+				'email' => (string) $o->getMessageSenderEmail(),
+				'name'  => (string) $o->getMessageSenderName(),
+				'force' => (bool) $o->isPluginSenderEmailEnforced(),
+			),
+		);
+	}
+
+	// ---------------------------------------------------------------------
+	// SMTP Mailer
+	// ---------------------------------------------------------------------
+
+	/**
+	 * SMTP Mailer keeps one SMTP server in one option, read through its own
+	 * smtp_mailer_get_option(). The password is stored base64-encoded, and the
+	 * plugin decodes it the same way when it sends.
+	 *
+	 * @return array
+	 */
+	private static function plan_smtp_mailer() {
+		$o     = smtp_mailer_get_option();
+		$o     = is_array( $o ) ? $o : array();
+		$label = self::SOURCES['smtp-mailer'];
+		$host  = trim( (string) ( $o['smtp_host'] ?? '' ) );
+		$items = array();
+
+		if ( '' !== $host ) {
+			$auth  = 'true' === ( $o['smtp_auth'] ?? '' );
+			$pass  = (string) base64_decode( (string) ( $o['smtp_password'] ?? '' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- SMTP Mailer stores the password base64-encoded.
+			$conn  = self::smtp_conn( $host, $o['smtp_port'] ?? 587, (string) ( $o['type_of_encryption'] ?? 'tls' ), $auth, $auth ? (string) ( $o['smtp_username'] ?? '' ) : '', $auth ? $pass : '', '' );
+			$notes = array();
+			if ( ! empty( $o['disable_ssl_verification'] ) ) {
+				$notes[] = __( 'SMTP Mailer was set to skip SSL certificate checks. SendForce always checks them, so sending fails if this server\'s certificate is invalid.', 'sendforce-mail-relay' );
+			}
+			$items[] = self::item( 'smtpmailer:smtp', $conn, 'primary', $label, $notes );
+		}
+
+		// "Force From Address" forces both; "Force From Email" only the address.
+		$force_email = ! empty( $o['force_from_email'] ) || ! empty( $o['force_from_address'] );
+		return array(
+			'items'  => $items,
+			'sender' => array(
+				'email' => (string) ( $o['from_email'] ?? '' ),
+				'name'  => (string) ( $o['from_name'] ?? '' ),
+				'force' => $force_email,
+			),
+		);
+	}
+
+	// ---------------------------------------------------------------------
+	// WP SMTP (Kadence Mail, formerly Solid Mail)
+	// ---------------------------------------------------------------------
+
+	/**
+	 * WP SMTP can hold several connections. The default one sends anything
+	 * that matches no other connection's From address; another active one
+	 * sends the email whose From matches its own. Read through its own
+	 * ProvidersRepository, which builds each connector with its fixed host,
+	 * port and encryption.
+	 *
+	 * @return array
+	 */
+	private static function plan_wp_smtp() {
+		$repo      = new \SolidWP\Mail\Repository\ProvidersRepository();
+		$label     = self::SOURCES['wp-smtp'];
+		$default   = $repo->get_default_provider();
+		$def_from  = $default ? strtolower( trim( (string) $default->get_from_email() ) ) : '';
+		// "Use other connections when the default fails" = a fallback.
+		$use_other = false;
+		if ( class_exists( '\SolidWP\Mail\Admin\SettingsScreen' ) ) {
+			$wps_settings = ( new \SolidWP\Mail\Admin\SettingsScreen() )->get_settings();
+			$use_other    = 'yes' === ( $wps_settings['use_unmatched_connections'] ?? 'no' );
+		}
+		$items     = array();
+		$senders   = array();
+		$hosts_api = array(
+			'sendgrid' => 'sendgrid',
+			'brevo'    => 'brevo',
+			'mailgun'  => 'mailgun',
+			'postmark' => 'postmark',
+		);
+
+		foreach ( $repo->get_all_providers() as $id => $c ) {
+			$is_default = $default && $default->get_id() === $c->get_id();
+			if ( ! $is_default && ! $c->is_active() ) {
+				continue; // Switched off in WP SMTP: it never sends, so leave it behind.
+			}
+
+			$name = (string) $c->get_name();
+			if ( 'postmark' === $name ) {
+				// Sent through Postmark's API with the server token.
+				$conn            = self::conn( 'postmark', 'api' );
+				$conn['api_key'] = (string) $c->get_username();
+			} else {
+				$secure = (string) $c->get_secure();
+				$conn   = self::smtp_conn(
+					$c->get_host(),
+					$c->get_port(),
+					'' === $secure ? 'none' : $secure,
+					$c->is_authentication(),
+					$c->get_username(),
+					$c->get_password(),
+					$hosts_api[ $name ] ?? ''
+				);
+			}
+
+			$from = strtolower( trim( (string) $c->get_from_email() ) );
+			$role = $is_default ? 'primary' : 'extra';
+			if ( ! $is_default && $use_other && ! in_array( 'fallback', wp_list_pluck( $items, 'role' ), true ) ) {
+				$role = 'fallback'; // The first other active connection.
+			}
+			$item = self::item( 'wpsmtp:' . $id, $conn, $role, $label, array() );
+			// Mail From this address went to this connection. Not when the
+			// default shares the address: the default already sends that mail.
+			if ( ! $is_default && is_email( $from ) && $from !== $def_from ) {
+				$item['route_from'][] = $from;
+			}
+			$items[] = $item;
+
+			if ( is_email( $from ) ) {
+				$senders[ $from ] = (string) $c->get_from_name();
+			}
+		}
+
+		// WP SMTP sends each email From its connection's own address. SendForce
+		// has one Sender Identity for every email, so set it only when there is
+		// a single address; with several, the original From is kept.
+		$sender = array( 'email' => '', 'name' => '', 'force' => false );
+		if ( 1 === count( $senders ) ) {
+			$sender = array( 'email' => (string) key( $senders ), 'name' => (string) current( $senders ), 'force' => true );
+		} elseif ( count( $senders ) > 1 && ! empty( $items ) && 'primary' === $items[0]['role'] ) {
+			$items[0]['notes'][] = __( 'WP SMTP sent each connection\'s mail from that connection\'s own From address. SendForce uses one Sender Identity for all mail, so none was set: choose one in Settings → Sender Identity if your provider needs it.', 'sendforce-mail-relay' );
+			$items[0]['status']  = 'needs_action';
+		}
+
+		// Primary first, then fallback, then the rest, as in the other importers.
+		$rank = array( 'primary' => 0, 'fallback' => 1, 'extra' => 2 );
+		usort( $items, function ( $a, $b ) use ( $rank ) {
+			return $rank[ $a['role'] ] - $rank[ $b['role'] ];
+		} );
+
+		return array( 'items' => $items, 'sender' => $sender );
+	}
+
+	// ---------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------
 
@@ -718,7 +994,20 @@ class SendForce_Importer {
 	 * @return array
 	 */
 	private static function unsupported( $key, $mailer, $source ) {
-		$names = array( 'zoho' => 'Zoho Mail', 'tosend' => 'ToSend', 'cloudflare' => 'Cloudflare Email' );
+		$names = array(
+			'zoho'           => 'Zoho Mail',
+			'tosend'         => 'ToSend',
+			'cloudflare'     => 'Cloudflare Email',
+			// Post SMTP transports.
+			'zohomail_api'   => 'Zoho Mail',
+			'cloudflare_api' => 'Cloudflare Email',
+			'office365_api'  => 'Microsoft 365 (Post SMTP Pro)',
+			'mailtrap_api'   => 'Mailtrap',
+			'sendpulse_api'  => 'SendPulse',
+			'emailit_api'    => 'Emailit',
+			'maileroo_api'   => 'Maileroo',
+			'sweego_api'     => 'Sweego',
+		);
 		$name  = $names[ $mailer ] ?? ucfirst( (string) $mailer );
 		return array(
 			'key'            => $key,
