@@ -1,0 +1,85 @@
+/**
+ * Connect-with-OAuth UI styles (Gmail / Microsoft 365).
+ */
+
+.sendforce-oauth-box {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	padding: 14px 16px;
+	background: var(--sf-bg, #F8FAFC);
+	border: 1px solid var(--sf-border, #E2E8F0);
+	border-radius: 10px;
+}
+
+.sendforce-oauth-status {
+	flex: 1;
+	min-width: 0;
+}
+
+.sendforce-oauth-status-text {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	font-size: 13.5px;
+	line-height: 1.45;
+	color: var(--sf-text-secondary, #475569);
+}
+
+/* Shared dot styles. Dot is its own block, sized larger and positioned to
+   align with the first line of (potentially wrapped) status text. */
+.sendforce-oauth-status-text::before {
+	content: "";
+	flex-shrink: 0;
+	display: block;
+	width: 12px;
+	height: 12px;
+	margin-top: 4px;
+	border-radius: 50%;
+	background: #94A3B8;
+	box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.20);
+}
+
+/* Connected — green */
+.sendforce-oauth-status-text.is-connected {
+	color: #047857;
+	font-weight: 600;
+}
+.sendforce-oauth-status-text.is-connected::before {
+	background: #10b981;
+	box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+/* Incomplete — amber. Refresh token present but Client ID/Secret missing. */
+.sendforce-oauth-status-text.is-incomplete {
+	color: #B45309;
+	font-weight: 600;
+}
+.sendforce-oauth-status-text.is-incomplete::before {
+	background: #F59E0B;
+	box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
+.sendforce-oauth-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.sendforce-oauth-help summary::-webkit-details-marker {
+	display: none;
+}
+.sendforce-oauth-help summary::before {
+	content: "▸ ";
+	color: var(--sf-text-muted, #94A3B8);
+	margin-right: 4px;
+}
+.sendforce-oauth-help[open] summary::before {
+	content: "▾ ";
+}
+.sendforce-oauth-help input[readonly] {
+	background: #fff;
+	cursor: pointer;
+}

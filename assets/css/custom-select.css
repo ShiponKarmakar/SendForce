@@ -1,0 +1,195 @@
+/**
+ * SendForce custom dropdown component.
+ * Replaces the OS-native <select> open menu with a fully-styled, animated panel.
+ * The original <select> stays in the DOM (visually hidden) so form submission and
+ * server-side processing are unchanged.
+ */
+
+/* The wrapper that replaces the visible select. Inline-block so it sits where
+   the original select would, and respects parent width. */
+.sf-dd {
+	position: relative;
+	display: block;
+	width: 100%;
+	font-family: var(--sf-font, inherit);
+}
+
+/* Trigger button — looks identical to the styled .sendforce-select. */
+.sf-dd-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	width: 100%;
+	height: 44px;
+	padding: 0 14px;
+	font-size: 14px;
+	font-weight: 500;
+	font-family: inherit;
+	color: var(--sf-text, #1E293B);
+	background: #fff;
+	border: 1px solid #DDE1E6;
+	border-radius: 8px;
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.sf-dd-trigger:hover {
+	border-color: #94A3B8;
+}
+.sf-dd-trigger:focus {
+	outline: none;
+	border-color: #1dd1a1;
+	box-shadow: 0 0 0 3px rgba(29, 209, 161, 0.18);
+}
+.sf-dd[data-open="true"] .sf-dd-trigger {
+	border-color: #1dd1a1;
+	box-shadow: 0 0 0 3px rgba(29, 209, 161, 0.18);
+}
+
+.sf-dd-trigger[disabled] {
+	background: #F1F5F9;
+	color: var(--sf-text-muted, #64748B);
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.sf-dd-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sf-dd-label.is-placeholder {
+	color: var(--sf-text-muted, #94A3B8);
+	font-weight: 400;
+}
+
+.sf-dd-chevron {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	color: #64748B;
+	transition: transform 0.18s ease, color 0.15s ease;
+}
+.sf-dd-trigger:hover .sf-dd-chevron,
+.sf-dd[data-open="true"] .sf-dd-chevron {
+	color: #1dd1a1;
+}
+.sf-dd[data-open="true"] .sf-dd-chevron {
+	transform: rotate(180deg);
+}
+
+/* Panel — the actual menu that opens. Absolutely positioned, animated. */
+.sf-dd-panel {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
+	z-index: 99999;
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 6px;
+	background: #fff;
+	border: 1px solid #E2E8F0;
+	border-radius: 10px;
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
+	opacity: 0;
+	transform: translateY(-4px) scale(0.98);
+	transform-origin: top center;
+	pointer-events: none;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.sf-dd[data-open="true"] .sf-dd-panel {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+	pointer-events: auto;
+}
+
+/* Panel scrollbar — slim & on-brand */
+.sf-dd-panel::-webkit-scrollbar {
+	width: 8px;
+}
+.sf-dd-panel::-webkit-scrollbar-thumb {
+	background: #CBD5E1;
+	border-radius: 8px;
+}
+.sf-dd-panel::-webkit-scrollbar-thumb:hover {
+	background: #94A3B8;
+}
+
+/* Each option */
+.sf-dd-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 9px 12px;
+	font-size: 13.5px;
+	font-family: inherit;
+	color: var(--sf-text, #1E293B);
+	background: transparent;
+	border: 0;
+	border-radius: 6px;
+	cursor: pointer;
+	text-align: left;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+.sf-dd-option:hover,
+.sf-dd-option.is-active {
+	background: #E6FAF4;            /* var(--sf-primary-light) */
+	color: #10ac84;                  /* var(--sf-primary-hover) */
+}
+.sf-dd-option.is-selected {
+	background: #1dd1a1;             /* var(--sf-primary) */
+	color: #fff;
+	font-weight: 600;
+}
+.sf-dd-option.is-selected:hover,
+.sf-dd-option.is-selected.is-active {
+	background: #10ac84;             /* var(--sf-primary-hover) */
+	color: #fff;
+}
+.sf-dd-option[disabled] {
+	color: var(--sf-text-muted, #94A3B8);
+	cursor: not-allowed;
+	background: transparent;
+}
+
+/* Tick mark on the selected option */
+.sf-dd-option-check {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	opacity: 0;
+}
+.sf-dd-option.is-selected .sf-dd-option-check {
+	opacity: 1;
+}
+
+/* Optgroup label rendered as a small caption */
+.sf-dd-group-label {
+	padding: 8px 12px 4px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--sf-text-muted, #94A3B8);
+}
+
+/* Hide the original native select — we keep it in the DOM for form submission
+   and accessibility (screen readers can still target it via aria-hidden=false
+   when the custom UI is not in focus). */
+.sf-dd-native {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}

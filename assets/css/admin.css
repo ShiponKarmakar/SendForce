@@ -1,0 +1,5275 @@
+/**
+ * SendForce Mail Relay Modern Admin Dashboard
+ *
+ * @package SendForce
+ */
+
+/* ========================================
+   CSS Variables / Design Tokens
+   ======================================== */
+:root {
+	--sf-primary: #1dd1a1;
+	--sf-primary-hover: #10ac84;
+	--sf-primary-light: #E6FAF4;
+	--sf-success: #22C55E;
+	--sf-success-light: #DCFCE7;
+	--sf-danger: #EF4444;
+	--sf-danger-light: #FEE2E2;
+	--sf-warning: #F59E0B;
+	--sf-warning-light: #FEF3C7;
+	--sf-info: #3B82F6;
+	--sf-info-light: #DBEAFE;
+	--sf-bg: #F0F2F5;
+	--sf-card: #FFFFFF;
+	--sf-text: #1E293B;
+	--sf-text-secondary: #64748B;
+	--sf-text-muted: #94A3B8;
+	--sf-border: #E2E8F0;
+	--sf-border-light: #F1F5F9;
+	--sf-radius: 12px;
+	--sf-radius-sm: 8px;
+	--sf-radius-xs: 6px;
+	--sf-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+	--sf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+	--sf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+	--sf-topbar-height: 56px;
+	--sf-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	--sf-transition: 0.2s ease;
+}
+
+/* ========================================
+   Reset / App Shell
+   ======================================== */
+.sendforce-app {
+	display: flex;
+	flex-direction: column;
+	min-height: calc(100vh - 32px);
+	margin: -20px 0 0 -20px;
+	font-family: var(--sf-font);
+	color: var(--sf-text);
+	font-size: 14px;
+	line-height: 1.5;
+	background: var(--sf-bg);
+	position: relative;
+	z-index: 1;
+}
+
+/* Hide WP admin footer inside our app */
+.sendforce-app ~ #wpfooter,
+.sendforce-app ~ .clear {
+	display: none !important;
+}
+
+/* Admin notices render just above .sendforce-app, whose margin-top:-20px +
+   position:relative;z-index:1 would otherwise paint the app's top bar over the
+   notice's bottom edge (clipping its last row). Lift our notices above the app
+   and give them bottom clearance so they can't be clipped. The conflict notice
+   carries the same rule in its own stylesheet (it also renders on non-SendForce
+   screens, where admin.css isn't loaded). */
+.sendforce-admin-notice {
+	position: relative;
+	z-index: 2;
+	margin-bottom: 24px;
+}
+
+/* box-sizing only for our own elements, not WP_List_Table internals */
+.sendforce-card,
+.sendforce-sidebar,
+.sendforce-content,
+.sendforce-stat-card,
+.sendforce-btn,
+.sendforce-input,
+.sendforce-select,
+.sendforce-modal-content,
+.sendforce-page-header,
+.sendforce-inline-form,
+.sendforce-nav-item,
+.sendforce-stats-grid,
+.sendforce-form-grid,
+.sendforce-quick-actions {
+	box-sizing: border-box;
+}
+
+.sendforce-app h1,
+.sendforce-app h2,
+.sendforce-app h3 {
+	margin: 0;
+	font-weight: 600;
+	color: var(--sf-text);
+}
+
+/* ========================================
+   Top Navigation Bar
+   ======================================== */
+.sendforce-topbar {
+	background: linear-gradient(180deg, #0E2233 0%, #0A1922 100%);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+	box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+	position: sticky;
+	top: 32px;
+	z-index: 100;
+	flex-shrink: 0;
+}
+
+.sendforce-topbar-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 20px;
+	height: 46px;
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+.sendforce-topbar-left {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	min-width: 0;
+	flex: 1;
+}
+
+.sendforce-topbar-right {
+	display: flex;
+	align-items: center;
+}
+
+.sendforce-logo {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.sendforce-logo-img {
+	height: 27px;
+	width: auto;
+	display: block;
+}
+
+.sendforce-logo .dashicons {
+	font-size: 22px;
+	width: 22px;
+	height: 22px;
+	color: var(--sf-primary);
+}
+
+.sendforce-logo-text {
+	font-size: 17px;
+	font-weight: 700;
+	color: #fff;
+	letter-spacing: -0.3px;
+}
+
+/* Navigation */
+.sendforce-nav {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	/* Allow horizontal scrolling as a final safety net at narrow widths */
+	overflow-x: auto;
+	scrollbar-width: none; /* Firefox */
+}
+
+.sendforce-nav::-webkit-scrollbar {
+	display: none; /* Chromium / Safari */
+}
+
+/* Intermediate breakpoint: between mobile (782px) and full-width desktop,
+   hide nav labels and show icon-only buttons so all tabs fit. */
+@media screen and ( max-width: 1340px ) and ( min-width: 783px ) {
+	.sendforce-nav-label {
+		display: none;
+	}
+	.sendforce-nav-item {
+		padding: 0 9px;
+	}
+	.sendforce-nav-item .dashicons {
+		margin: 0;
+	}
+	.sendforce-nav-divider {
+		margin: 0 4px;
+	}
+}
+
+.sendforce-nav-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 9px;
+	height: 46px;
+	color: #93A4B5;
+	text-decoration: none;
+	transition: color 0.15s ease, box-shadow 0.15s ease;
+	font-size: 12.5px;
+	font-weight: 500;
+	white-space: nowrap;
+	position: relative;
+	box-shadow: inset 0 -2px 0 transparent;
+}
+
+.sendforce-nav-item:hover {
+	color: #F1F5F9;
+	box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.18);
+}
+
+.sendforce-nav-item:focus {
+	outline: none;
+}
+
+.sendforce-nav-item:focus-visible {
+	box-shadow: inset 0 0 0 2px rgba(29, 209, 161, 0.5);
+	border-radius: 6px;
+}
+
+/* Active tab — clean underline indicator (lighter than a filled pill):
+   green label + icon and a 2px brand-green bottom border. */
+.sendforce-nav-item.active {
+	color: #5EEAD4;
+	box-shadow: inset 0 -2px 0 var(--sf-primary);
+	font-weight: 600;
+}
+
+.sendforce-nav-item.active:hover {
+	color: #7DF0DD;
+}
+
+.sendforce-nav-item .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	transition: color 0.15s ease;
+}
+
+.sendforce-nav-item.active .dashicons {
+	color: #2DD4BF;
+}
+
+/* Thin separator between nav groups (Overview | Setup | Activity | What's New). */
+.sendforce-nav-divider {
+	width: 1px;
+	height: 16px;
+	background: rgba(255, 255, 255, 0.13);
+	margin: 0 5px;
+	flex-shrink: 0;
+}
+
+.sendforce-version {
+	font-size: 11px;
+	font-weight: 600;
+	color: #93A4B5;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	padding: 3px 9px;
+	border-radius: 9999px;
+	letter-spacing: 0.02em;
+}
+
+/* ========================================
+   Main Content Area
+   ======================================== */
+.sendforce-main {
+	flex: 1;
+	min-width: 0;
+	padding: 0;
+	background: var(--sf-bg);
+}
+
+.sendforce-content {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 28px 32px 60px;
+}
+
+/* Page Header */
+.sendforce-page-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 28px;
+}
+
+.sendforce-page-header h1 {
+	font-size: 26px;
+	font-weight: 700;
+	letter-spacing: -0.4px;
+	color: var(--sf-text);
+}
+
+.sendforce-subtitle {
+	color: var(--sf-text-secondary);
+	margin: 4px 0 0;
+	font-size: 14px;
+}
+
+.sendforce-header-actions {
+	display: flex;
+	gap: 8px;
+}
+
+/* ========================================
+   Cards
+   ======================================== */
+.sendforce-card {
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius);
+	box-shadow: var(--sf-shadow);
+	margin-bottom: 20px;
+}
+
+.sendforce-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 18px 24px;
+	border-bottom: 1px solid var(--sf-border-light);
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.sendforce-card-header h2 {
+	font-size: 15px;
+	font-weight: 600;
+	letter-spacing: -0.2px;
+}
+
+.sendforce-card-body {
+	padding: 24px;
+}
+
+.sendforce-card-compact {
+	padding: 24px;
+}
+
+.sendforce-card-compact h3 {
+	font-size: 15px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+/* ========================================
+   Stats Grid
+   ======================================== */
+.sendforce-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.sendforce-stats-sm {
+	margin-bottom: 20px;
+}
+
+.sendforce-stat-card {
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius);
+	box-shadow: var(--sf-shadow);
+	padding: 22px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	transition: box-shadow var(--sf-transition);
+}
+
+.sendforce-stat-card:hover {
+	box-shadow: var(--sf-shadow-md);
+}
+
+.sendforce-stat-mini {
+	padding: 16px 20px;
+}
+
+.sendforce-stat-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: var(--sf-radius-sm);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.sendforce-stat-mini .sendforce-stat-icon {
+	width: 40px;
+	height: 40px;
+}
+
+.sendforce-stat-icon .dashicons {
+	font-size: 22px;
+	width: 22px;
+	height: 22px;
+}
+
+.sendforce-stat-icon-sent {
+	background: var(--sf-success-light);
+	color: var(--sf-success);
+}
+
+.sendforce-stat-icon-failed {
+	background: var(--sf-danger-light);
+	color: var(--sf-danger);
+}
+
+.sendforce-stat-icon-queued {
+	background: var(--sf-warning-light);
+	color: var(--sf-warning);
+}
+
+.sendforce-stat-icon-rate {
+	background: var(--sf-primary-light);
+	color: var(--sf-primary);
+}
+
+.sendforce-stat-icon-processing {
+	background: var(--sf-info-light);
+	color: var(--sf-info);
+}
+
+.sendforce-stat-info {
+	display: flex;
+	flex-direction: column;
+}
+
+.sendforce-stat-number {
+	font-size: 24px;
+	font-weight: 700;
+	line-height: 1.2;
+	color: var(--sf-text);
+}
+
+.sendforce-stat-mini .sendforce-stat-number {
+	font-size: 20px;
+}
+
+.sendforce-stat-label {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	margin-top: 2px;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.sendforce-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.4;
+	border: 1px solid transparent;
+	border-radius: var(--sf-radius-xs);
+	cursor: pointer;
+	text-decoration: none;
+	transition: all var(--sf-transition);
+	font-family: var(--sf-font);
+	white-space: nowrap;
+}
+
+.sendforce-btn .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.sendforce-btn-primary {
+	background: var(--sf-primary);
+	color: #fff;
+	border-color: var(--sf-primary);
+}
+
+.sendforce-btn-primary:hover,
+.sendforce-btn-primary:focus {
+	background: var(--sf-primary-hover);
+	border-color: var(--sf-primary-hover);
+	color: #fff;
+}
+
+.sendforce-btn-outline {
+	background: var(--sf-card);
+	color: var(--sf-text);
+	border-color: var(--sf-border);
+}
+
+.sendforce-btn-outline:hover,
+.sendforce-btn-outline:focus {
+	background: var(--sf-bg);
+	border-color: var(--sf-text-secondary);
+	color: var(--sf-text);
+}
+
+.sendforce-btn-danger {
+	background: transparent;
+	color: var(--sf-danger);
+	border-color: var(--sf-danger);
+}
+
+.sendforce-btn-danger:hover,
+.sendforce-btn-danger:focus {
+	background: var(--sf-danger);
+	color: #fff;
+}
+
+.sendforce-btn-sm {
+	padding: 6px 12px;
+	font-size: 12px;
+}
+
+/* Button inline spinner */
+.sendforce-spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(255, 255, 255, 0.4);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: sf-spin 0.7s linear infinite;
+	vertical-align: middle;
+	margin-left: 6px;
+}
+
+@keyframes sf-spin {
+	to { transform: rotate(360deg); }
+}
+
+.sendforce-spin {
+	animation: sf-spin 0.9s linear infinite;
+}
+
+/* Inline "Validating data. Please wait…" status text shown next to the
+   Save Connection button while the AJAX save is in flight. Distinct from
+   .success / .error so the colour matches an info/processing state. */
+.sendforce-notice-inline.sendforce-notice-validating {
+	color: #2271b1;
+	font-style: italic;
+}
+
+.sendforce-btn-xs {
+	padding: 4px 8px;
+	font-size: 12px;
+}
+
+.sendforce-btn-xs .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+}
+
+.sendforce-btn-lg {
+	padding: 10px 24px;
+	font-size: 14px;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+.sendforce-settings-form {
+	max-width: 100%;
+}
+
+.sendforce-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 22px;
+}
+
+.sendforce-field {
+	display: flex;
+	flex-direction: column;
+}
+
+.sendforce-field-full {
+	grid-column: 1 / -1;
+}
+
+.sendforce-label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text);
+	margin-bottom: 6px;
+}
+
+/* Base input + select. Selectors include element-qualified forms so we win
+   against WP admin's per-type rules (input[type="text"], input[type="email"],
+   etc.) — those have specificity (0,1,1) and would otherwise override us. */
+.sendforce-input,
+.sendforce-select,
+input.sendforce-input,
+select.sendforce-select,
+textarea.sendforce-input {
+	width: 100%;
+	height: 44px;
+	padding: 0 14px;
+	font-size: 14px;
+	font-family: var(--sf-font);
+	border: 1px solid #DDE1E6;
+	border-radius: 8px;
+	background: #fff;
+	color: var(--sf-text);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+	outline: none;
+	box-shadow: none;
+}
+
+.sendforce-input:hover,
+.sendforce-select:hover,
+input.sendforce-input:hover,
+select.sendforce-select:hover,
+textarea.sendforce-input:hover {
+	border-color: #94A3B8;
+}
+
+.sendforce-input:focus,
+.sendforce-select:focus,
+input.sendforce-input:focus,
+select.sendforce-select:focus,
+textarea.sendforce-input:focus {
+	border-color: var(--sf-primary);
+	box-shadow: 0 0 0 3px rgba(29, 209, 161, 0.18);
+}
+
+.sendforce-input::placeholder {
+	color: var(--sf-text-muted);
+	font-weight: 400;
+}
+
+/* Select custom arrow — modern chevron, indigo focus state */
+.sendforce-select {
+	appearance: none;
+	-webkit-appearance: none;
+	padding-right: 38px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+	background-size: 14px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.sendforce-select:hover {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234F46E5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+.sendforce-select:disabled,
+.sendforce-input:disabled {
+	background-color: #F1F5F9;
+	color: var(--sf-text-muted);
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+/* Number inputs — hide native spin buttons AND override WordPress admin's
+   input[type="number"] border (which has higher specificity than
+   .sendforce-input alone) so all fields share the same look. */
+.sendforce-input[type="number"],
+input[type="number"].sendforce-input {
+	-moz-appearance: textfield;
+	appearance: textfield;
+	height: 44px;
+	padding: 0 14px;
+	border: 1px solid #DDE1E6;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: none;
+	font-size: 14px;
+	color: var(--sf-text);
+	line-height: 1.5;
+}
+
+.sendforce-input[type="number"]:focus,
+input[type="number"].sendforce-input:focus {
+	border-color: var(--sf-primary);
+	box-shadow: 0 0 0 3px rgba(29, 209, 161, 0.18);
+	outline: none;
+}
+
+.sendforce-input[type="number"]::-webkit-inner-spin-button,
+.sendforce-input[type="number"]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	appearance: none;
+	margin: 0;
+}
+
+/* Password input */
+.sendforce-input[type="password"] {
+	letter-spacing: 1px;
+}
+
+.sendforce-help {
+	display: block;
+	margin-top: 6px;
+	font-size: 12px;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-help-warning {
+	color: #92400E;
+	background: var(--sf-warning-light);
+	border: 1px solid #FDE68A;
+	border-radius: var(--sf-radius-xs);
+	padding: 6px 10px;
+	margin-top: 8px;
+}
+
+.sendforce-help-info {
+	color: #1E40AF;
+	background: #EFF6FF;
+	border: 1px solid #BFDBFE;
+	border-radius: var(--sf-radius-xs);
+	padding: 6px 10px;
+	margin-top: 8px;
+}
+
+.sendforce-field-fixed-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	background: #E0F2FE;
+	color: #0369A1;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	vertical-align: middle;
+}
+
+/* Toggle Switch */
+.sendforce-toggle-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.sendforce-toggle-input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.sendforce-toggle {
+	position: relative;
+	width: 44px;
+	height: 24px;
+	background: #CBD5E1;
+	border-radius: 12px;
+	transition: background 0.25s ease;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.sendforce-toggle::after {
+	content: '';
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.25s ease;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.sendforce-toggle-input:checked + .sendforce-toggle {
+	background: var(--sf-primary);
+}
+
+.sendforce-toggle-input:checked + .sendforce-toggle::after {
+	transform: translateX(20px);
+}
+
+.sendforce-toggle-input:focus + .sendforce-toggle {
+	box-shadow: none;
+}
+
+.sendforce-form-actions {
+	margin-top: 24px;
+}
+
+/* Inline form (test email) */
+.sendforce-inline-form {
+	display: flex;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.sendforce-inline-form .sendforce-input {
+	flex: 1;
+	max-width: 320px;
+}
+
+/* Auth fields — always visible and editable regardless of auth toggle state */
+.sendforce-auth-fields {
+	transition: opacity var(--sf-transition);
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+.sendforce-table-wrap {
+	overflow-x: auto;
+}
+
+.sendforce-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.sendforce-table thead th {
+	padding: 12px 16px;
+	text-align: left;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	background: var(--sf-bg);
+	border-bottom: 1px solid var(--sf-border);
+}
+
+.sendforce-table tbody td {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--sf-border-light);
+	font-size: 13px;
+	color: var(--sf-text);
+}
+
+.sendforce-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.sendforce-table tbody tr:hover {
+	background: #FAFBFC;
+}
+
+.sendforce-td-email {
+	font-weight: 500;
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sendforce-td-date {
+	color: var(--sf-text-secondary);
+	white-space: nowrap;
+	font-size: 12px;
+}
+
+.sendforce-td-actions {
+	display: flex;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+/* Checkbox column */
+.sendforce-th-cb,
+.sendforce-td-cb {
+	width: 44px;
+	text-align: left;
+	padding-left: 24px !important;
+	padding-right: 8px !important;
+	vertical-align: middle;
+}
+
+.sendforce-th-cb input,
+.sendforce-td-cb input {
+	margin: 0;
+	display: block;
+}
+
+/* Log header — filter tabs only row */
+.sendforce-log-header {
+	border-bottom: 1px solid var(--sf-border-light);
+	padding: 16px 24px;
+}
+
+/* "via rule: X" badge — surfaces when a Smart Routing rule routed an email */
+.sendforce-log-rule-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	margin-top: 2px;
+	font-size: 11px;
+	font-weight: 500;
+	color: #4338CA;
+	background: #EEF2FF;
+	border-radius: 999px;
+	padding: 1px 8px;
+	white-space: nowrap;
+}
+
+.sendforce-log-rule-badge .dashicons {
+	font-size: 12px;
+	width: 12px;
+	height: 12px;
+}
+
+/* Auto-clean status row (above filter bar) */
+.sendforce-log-autoclean {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 24px;
+	background: #FAFBFC;
+	border-bottom: 1px solid var(--sf-border-light);
+	font-size: 13px;
+	color: var(--sf-text);
+}
+
+.sendforce-log-autoclean-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.sendforce-log-autoclean-info .dashicons {
+	color: var(--sf-text-muted);
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+.sendforce-log-autoclean-text strong {
+	color: var(--sf-text);
+	margin-right: 4px;
+}
+
+.sendforce-log-autoclean-text a {
+	color: var(--sf-primary);
+	text-decoration: none;
+}
+
+.sendforce-log-autoclean-text a:hover {
+	text-decoration: underline;
+}
+
+.sendforce-log-autoclean-disabled {
+	color: #B45309;
+}
+
+.sendforce-log-autoclean-actions {
+	flex-shrink: 0;
+}
+
+/* Filter bar */
+.sendforce-log-filter-bar {
+	margin: 0;
+	padding: 18px 24px 20px;
+	border-bottom: 1px solid var(--sf-border);
+	background: #FAFBFC;
+}
+
+.sendforce-log-filter-fields {
+	display: flex;
+	gap: 16px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+
+.sendforce-log-filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+	min-width: 180px;
+}
+
+/* Date fields fixed width */
+.sendforce-log-filter-group:has(.sendforce-date-input) {
+	flex: 0 0 180px;
+}
+
+.sendforce-log-filter-label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--sf-text-muted);
+}
+
+.sendforce-log-filter-label .dashicons {
+	font-size: 13px;
+	width: 13px;
+	height: 13px;
+}
+
+.sendforce-log-filter-input {
+	height: 38px !important;
+	padding: 0 12px !important;
+	font-size: 13px !important;
+	width: 100% !important;
+	background: #fff !important;
+}
+
+/* Native date picker styling */
+.sendforce-date-input {
+	cursor: pointer;
+	width: 180px !important;
+	max-width: 180px;
+}
+
+.sendforce-date-input::-webkit-calendar-picker-indicator {
+	opacity: 0.45;
+	cursor: pointer;
+}
+
+.sendforce-date-input::-webkit-calendar-picker-indicator:hover {
+	opacity: 0.9;
+}
+
+.sendforce-log-filter-actions {
+	display: flex;
+	gap: 8px;
+	align-items: flex-end;
+	padding-bottom: 0;
+	flex-shrink: 0;
+	padding-top: 21px; /* align with bottom of inputs (label height + gap) */
+}
+
+/* Active filter chips */
+.sendforce-active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+	padding-top: 10px;
+	border-top: 1px solid var(--sf-border);
+}
+
+.sendforce-active-filter-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: 20px;
+	padding: 3px 10px;
+	font-size: 12px;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-active-filter-chip strong {
+	color: var(--sf-text);
+	font-weight: 600;
+}
+
+.sendforce-filter-result-count {
+	font-size: 12px;
+	margin-left: auto;
+}
+
+/* Legacy search form kept for back-compat */
+.sendforce-log-search-form {
+	margin: 0;
+}
+
+.sendforce-search-wrap {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.sendforce-search-input {
+	width: 220px;
+	padding: 6px 12px !important;
+	font-size: 13px !important;
+}
+
+/* Responsive filter bar */
+@media screen and (max-width: 782px) {
+	.sendforce-log-filter-fields {
+		gap: 8px;
+	}
+
+	.sendforce-log-filter-group {
+		min-width: 140px;
+	}
+
+	.sendforce-date-input {
+		max-width: 100%;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.sendforce-log-filter-group {
+		flex: 1 1 100%;
+	}
+
+	.sendforce-log-filter-actions {
+		width: 100%;
+		justify-content: flex-start;
+	}
+}
+
+/* ========================================
+   Mobile card layout for the Email Log table
+   ======================================== */
+@media screen and ( max-width: 782px ) {
+
+	/* Hide the column headers — labels move inline next to each cell value. */
+	.sendforce-card .wp-list-table thead {
+		display: none !important;
+	}
+
+	/* Each row becomes a stacked card. */
+	.sendforce-card .wp-list-table tbody tr {
+		display: block !important;
+		padding: 12px 14px !important;
+		margin: 0 0 10px !important;
+		border: 1px solid var(--sf-border) !important;
+		border-radius: var(--sf-radius-sm) !important;
+		background: var(--sf-card) !important;
+		box-shadow: var(--sf-shadow) !important;
+	}
+
+	/* Cells stack vertically, full width. */
+	.sendforce-card .wp-list-table tbody td {
+		display: flex !important;
+		justify-content: space-between !important;
+		align-items: flex-start !important;
+		gap: 12px !important;
+		width: 100% !important;
+		padding: 6px 0 !important;
+		border: none !important;
+		text-align: left !important;
+		white-space: normal !important;
+	}
+
+	/* Inject the column label as a left-side caption so users know what each
+	   value is. Labels are hardcoded per column-key class because WP_List_Table
+	   doesn't expose a data-attr we can read with CSS attr(). */
+	.sendforce-card .wp-list-table tbody td::before {
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--sf-text-secondary);
+		flex: 0 0 80px;
+		padding-top: 2px;
+	}
+
+	.sendforce-card .wp-list-table tbody td.column-to_email::before   { content: 'To'; }
+	.sendforce-card .wp-list-table tbody td.column-subject::before    { content: 'Subject'; }
+	.sendforce-card .wp-list-table tbody td.column-status::before     { content: 'Status'; }
+	.sendforce-card .wp-list-table tbody td.column-created_at::before { content: 'Date'; }
+	.sendforce-card .wp-list-table tbody td.column-actions::before    { content: 'Actions'; }
+
+	/* The "cb" (checkbox) column doesn't need a label. */
+	.sendforce-card .wp-list-table tbody td.column-cb {
+		justify-content: flex-start !important;
+		padding-top: 0 !important;
+		padding-bottom: 8px !important;
+		border-bottom: 1px dashed var(--sf-border-light) !important;
+		margin-bottom: 6px !important;
+	}
+	.sendforce-card .wp-list-table tbody td.column-cb::before {
+		display: none;
+	}
+
+	/* Subject can be long — let it wrap fully and prefer the right column space. */
+	.sendforce-card .wp-list-table tbody td.column-subject {
+		flex-direction: column !important;
+		align-items: stretch !important;
+	}
+	.sendforce-card .wp-list-table tbody td.column-subject::before {
+		flex: 0 0 auto;
+		margin-bottom: 4px;
+	}
+
+	/* Action buttons land on their own row, full width. */
+	.sendforce-card .wp-list-table tbody td.column-actions {
+		flex-wrap: wrap !important;
+		padding-top: 8px !important;
+		margin-top: 6px !important;
+		border-top: 1px dashed var(--sf-border-light) !important;
+	}
+
+	/* Pagination + bulk action rows already handled elsewhere; ensure they
+	   don't inherit display:flex from above. */
+	.sendforce-card .wp-list-table tfoot tr,
+	.sendforce-card .wp-list-table tr.no-items {
+		display: table-row !important;
+	}
+}
+
+/* Bulk action bar */
+.sendforce-bulk-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 20px;
+	border-top: 1px solid var(--sf-border-light);
+}
+
+/* ========================================
+   WP_List_Table Full Override (kept for backwards compat)
+   ======================================== */
+
+/*
+ * CRITICAL: WordPress responsive CSS hides table columns when it thinks the
+ * viewport is narrow. Our sidebar layout makes WP miscalculate available width.
+ * We must force ALL table elements visible with high-specificity !important rules.
+ */
+.sendforce-card .wp-list-table,
+.sendforce-card table.widefat {
+	border: none !important;
+	border-spacing: 0 !important;
+	border-collapse: collapse !important;
+	width: 100% !important;
+	display: table !important;
+	visibility: visible !important;
+	opacity: 1 !important;
+	position: static !important;
+	height: auto !important;
+	max-height: none !important;
+	overflow: visible !important;
+	table-layout: auto !important;
+}
+
+.sendforce-card .wp-list-table thead,
+.sendforce-card .wp-list-table tfoot {
+	display: table-header-group !important;
+	visibility: visible !important;
+}
+
+.sendforce-card .wp-list-table tbody {
+	display: table-row-group !important;
+	visibility: visible !important;
+}
+
+.sendforce-card .wp-list-table tr {
+	display: table-row !important;
+	visibility: visible !important;
+}
+
+.sendforce-card .wp-list-table th,
+.sendforce-card .wp-list-table td {
+	display: table-cell !important;
+	visibility: visible !important;
+	float: none !important;
+}
+
+/* Table header cells */
+.sendforce-card .wp-list-table thead th,
+.sendforce-card .wp-list-table thead td {
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	color: var(--sf-text-secondary) !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.5px !important;
+	background: var(--sf-bg) !important;
+	border-top: none !important;
+	border-bottom: 1px solid var(--sf-border) !important;
+	padding: 10px 14px !important;
+	box-shadow: none !important;
+}
+
+.sendforce-card .wp-list-table thead th a {
+	color: var(--sf-text-secondary);
+	text-decoration: none;
+}
+
+.sendforce-card .wp-list-table thead th a:hover {
+	color: var(--sf-text);
+}
+
+/* Table body cells */
+.sendforce-card .wp-list-table tbody td {
+	font-size: 13px !important;
+	padding: 11px 14px !important;
+	border-bottom: 1px solid var(--sf-border-light) !important;
+	border-top: none !important;
+	vertical-align: middle !important;
+	color: var(--sf-text) !important;
+	box-shadow: none !important;
+}
+
+.sendforce-card .wp-list-table tbody tr:last-child td {
+	border-bottom: none !important;
+}
+
+.sendforce-card .wp-list-table tbody tr:hover td {
+	background: #F8FAFC !important;
+}
+
+/* Checkbox column */
+.sendforce-card .wp-list-table .column-cb,
+.sendforce-card .wp-list-table .check-column {
+	width: 36px !important;
+	padding: 10px 8px 10px 14px !important;
+}
+
+.sendforce-card .wp-list-table .check-column input[type="checkbox"] {
+	margin: 0;
+	border-radius: 4px;
+	border: 1px solid var(--sf-border);
+}
+
+/* Remove WP default striped rows */
+.sendforce-card .wp-list-table .alternate {
+	background: transparent !important;
+}
+
+/* Kill WP responsive toggle buttons that appear on narrow screens */
+.sendforce-card .wp-list-table .toggle-row {
+	display: none !important;
+}
+
+/* Override WP responsive media queries that hide columns */
+.sendforce-card .wp-list-table td.column-primary ~ td,
+.sendforce-card .wp-list-table th {
+	display: table-cell !important;
+}
+
+.sendforce-card .wp-list-table .is-expanded td {
+	display: table-cell !important;
+}
+
+.sendforce-card .wp-list-table .row-actions {
+	position: static !important;
+	visibility: visible !important;
+}
+
+/* Tablenav — keep WP float layout, just restyle */
+.sendforce-card .tablenav {
+	margin: 0;
+	padding: 12px 20px;
+	height: auto;
+	overflow: hidden; /* clearfix for floats */
+}
+
+.sendforce-card .tablenav::after {
+	content: '';
+	display: table;
+	clear: both;
+}
+
+.sendforce-card .tablenav.top {
+	border-bottom: 1px solid var(--sf-border-light);
+}
+
+.sendforce-card .tablenav.bottom {
+	border-top: 1px solid var(--sf-border-light);
+}
+
+/* Selects inside tablenav */
+.sendforce-card .tablenav select {
+	padding: 6px 30px 6px 10px;
+	font-size: 13px;
+	font-family: var(--sf-font);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	background-color: var(--sf-card);
+	color: var(--sf-text);
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M2.5 4.5L6 8l3.5-3.5z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	background-size: 12px;
+	outline: none;
+	cursor: pointer;
+	min-height: 34px;
+	line-height: 1.4;
+	vertical-align: middle;
+}
+
+.sendforce-card .tablenav select:focus {
+	border-color: #94A3B8;
+}
+
+/* Buttons inside tablenav (Filter, Apply) */
+.sendforce-card .tablenav .button,
+.sendforce-card .tablenav input[type="submit"] {
+	padding: 6px 14px;
+	font-size: 13px;
+	font-weight: 500;
+	font-family: var(--sf-font);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	background: var(--sf-card);
+	color: var(--sf-text);
+	cursor: pointer;
+	transition: all var(--sf-transition);
+	min-height: 34px;
+	line-height: 1.4;
+	vertical-align: middle;
+}
+
+.sendforce-card .tablenav .button:hover,
+.sendforce-card .tablenav input[type="submit"]:hover {
+	background: var(--sf-bg);
+	border-color: var(--sf-text-secondary);
+}
+
+/* Actions containers */
+.sendforce-card .tablenav .actions {
+	padding: 0;
+}
+
+/* Pagination */
+.sendforce-card .tablenav-pages .displaying-num {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	margin-right: 6px;
+}
+
+.sendforce-card .tablenav-pages .pagination-links .button {
+	min-width: 30px;
+	height: 30px;
+	padding: 0 6px;
+	text-align: center;
+	border-radius: var(--sf-radius-xs);
+}
+
+.sendforce-card .tablenav-pages .current-page {
+	min-width: 44px;
+	padding: 4px 6px;
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	text-align: center;
+	font-size: 13px;
+}
+
+/* "View" button inside table rows */
+.sendforce-card .wp-list-table .button.button-small {
+	padding: 4px 12px;
+	font-size: 12px;
+	font-weight: 500;
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	background: var(--sf-card);
+	color: var(--sf-primary);
+	cursor: pointer;
+	transition: all var(--sf-transition);
+	line-height: 1.4;
+}
+
+.sendforce-card .wp-list-table .button.button-small:hover {
+	background: var(--sf-primary-light);
+	border-color: var(--sf-primary);
+}
+
+/* No items message */
+.sendforce-card .wp-list-table .no-items td {
+	padding: 40px 20px;
+	text-align: center;
+	color: var(--sf-text-muted);
+	font-size: 14px;
+	border-bottom: none;
+}
+
+/* Sorting indicators */
+.sendforce-card .wp-list-table thead .sorted .sorting-indicators,
+.sendforce-card .wp-list-table thead .sortable .sorting-indicators {
+	display: inline-flex;
+	vertical-align: middle;
+}
+
+/* Column widths */
+.sendforce-card .wp-list-table .column-to_email {
+	width: 22%;
+}
+
+.sendforce-card .wp-list-table .column-status {
+	width: 100px;
+}
+
+.sendforce-card .wp-list-table .column-created_at {
+	width: 160px;
+}
+
+.sendforce-card .wp-list-table .column-actions {
+	width: 80px;
+	text-align: center;
+}
+
+/* Toolbar (search box area above table) */
+.sendforce-table-toolbar {
+	padding: 16px 20px 0;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.sendforce-table-toolbar .search-box {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.sendforce-table-toolbar .search-box label {
+	display: none;
+}
+
+.sendforce-table-toolbar .search-box input[type="search"] {
+	padding: 7px 12px;
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	font-size: 13px;
+	font-family: var(--sf-font);
+	outline: none;
+	min-width: 220px;
+	background: var(--sf-card);
+	color: var(--sf-text);
+}
+
+.sendforce-table-toolbar .search-box input[type="search"]:focus {
+	border-color: #94A3B8;
+}
+
+.sendforce-table-toolbar .search-box input[type="submit"],
+.sendforce-table-toolbar .search-box .button {
+	padding: 7px 16px;
+	background: var(--sf-primary);
+	color: #fff;
+	border: 1px solid var(--sf-primary);
+	border-radius: var(--sf-radius-xs);
+	font-size: 13px;
+	font-weight: 500;
+	font-family: var(--sf-font);
+	cursor: pointer;
+	transition: all var(--sf-transition);
+}
+
+.sendforce-table-toolbar .search-box input[type="submit"]:hover {
+	background: var(--sf-primary-hover);
+	border-color: var(--sf-primary-hover);
+}
+
+/* ========================================
+   Badges
+   ======================================== */
+.sendforce-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+	text-transform: capitalize;
+}
+
+.sendforce-badge-sent {
+	background: var(--sf-success-light);
+	color: #16A34A;
+}
+
+.sendforce-badge-failed {
+	background: var(--sf-danger-light);
+	color: #DC2626;
+}
+
+.sendforce-badge-queued {
+	background: var(--sf-warning-light);
+	color: #D97706;
+}
+
+.sendforce-badge-processing {
+	background: var(--sf-info-light);
+	color: #2563EB;
+}
+
+/* Same classes used in WP_List_Table */
+.sendforce-status {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.sendforce-status-sent {
+	background: var(--sf-success-light);
+	color: #16A34A;
+}
+
+.sendforce-status-failed {
+	background: var(--sf-danger-light);
+	color: #DC2626;
+}
+
+/* ========================================
+   Filter Tabs
+   ======================================== */
+.sendforce-filter-tabs {
+	display: flex;
+	gap: 4px;
+}
+
+.sendforce-filter-tab {
+	padding: 6px 14px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text-secondary);
+	text-decoration: none;
+	border-radius: 20px;
+	transition: all var(--sf-transition);
+	line-height: 1.5;
+}
+
+.sendforce-filter-tab:hover {
+	color: var(--sf-text);
+	background: var(--sf-bg);
+}
+
+.sendforce-filter-tab.active {
+	color: var(--sf-primary);
+	background: var(--sf-primary-light);
+	font-weight: 600;
+}
+
+/* ========================================
+   Attempts Badge
+   ======================================== */
+.sendforce-attempts {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text-secondary);
+	background: var(--sf-bg);
+	padding: 2px 8px;
+	border-radius: 4px;
+}
+
+/* ========================================
+   Pagination
+   ======================================== */
+.sendforce-pagination {
+	padding: 16px 24px;
+	text-align: center;
+	border-top: 1px solid var(--sf-border-light);
+}
+
+.sendforce-pagination .page-numbers {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	height: 32px;
+	padding: 0 8px;
+	margin: 0 2px;
+	border-radius: var(--sf-radius-xs);
+	font-size: 13px;
+	font-weight: 500;
+	text-decoration: none;
+	color: var(--sf-text-secondary);
+	transition: all var(--sf-transition);
+}
+
+.sendforce-pagination .page-numbers:hover {
+	background: var(--sf-bg);
+	color: var(--sf-text);
+}
+
+.sendforce-pagination .page-numbers.current {
+	background: var(--sf-primary);
+	color: #fff;
+}
+
+/* ========================================
+   Notices
+   ======================================== */
+.sendforce-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	padding: 16px 20px;
+	border-radius: var(--sf-radius);
+	margin-bottom: 20px;
+}
+
+.sendforce-notice .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.sendforce-notice p {
+	margin: 4px 0 10px;
+	font-size: 13px;
+}
+
+.sendforce-notice strong {
+	font-size: 14px;
+}
+
+.sendforce-notice-warning {
+	background: var(--sf-warning-light);
+	border: 1px solid #FDE68A;
+	color: #92400E;
+}
+
+.sendforce-notice-warning .dashicons {
+	color: var(--sf-warning);
+}
+
+/* Test result */
+.sendforce-test-result {
+	margin-top: 12px;
+	padding: 10px 14px;
+	border-radius: var(--sf-radius-xs);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.sendforce-test-result.success {
+	background: var(--sf-success-light);
+	color: #16A34A;
+	border: 1px solid #BBF7D0;
+}
+
+.sendforce-test-result.error {
+	background: var(--sf-danger-light);
+	color: #DC2626;
+	border: 1px solid #FECACA;
+}
+
+/* ========================================
+   Quick Actions Grid
+   ======================================== */
+.sendforce-quick-actions {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+}
+
+/* Status List */
+.sendforce-status-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.sendforce-status-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 13px;
+	color: var(--sf-text);
+}
+
+.sendforce-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.sendforce-dot-green {
+	background: var(--sf-success);
+}
+
+.sendforce-dot-red {
+	background: var(--sf-danger);
+}
+
+.sendforce-dot-blue {
+	background: var(--sf-info);
+}
+
+.sendforce-dot-gray {
+	background: #CBD5E1;
+}
+
+/* ========================================
+   Empty State
+   ======================================== */
+.sendforce-empty-state {
+	text-align: center;
+	padding: 48px 24px;
+	color: var(--sf-text-muted);
+}
+
+.sendforce-empty-state .dashicons {
+	font-size: 40px;
+	width: 40px;
+	height: 40px;
+	margin-bottom: 12px;
+	opacity: 0.4;
+}
+
+.sendforce-empty-state p {
+	font-size: 14px;
+	margin: 0;
+}
+
+/* ========================================
+   Links
+   ======================================== */
+.sendforce-link {
+	color: var(--sf-primary);
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 500;
+	transition: color var(--sf-transition);
+}
+
+.sendforce-link:hover {
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-text-muted {
+	color: var(--sf-text-secondary);
+	font-size: 13px;
+	margin: 0;
+}
+
+.sendforce-text-danger {
+	color: var(--sf-danger);
+}
+
+/* ========================================
+   Modal
+   ======================================== */
+.sendforce-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 100001;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-modal-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(15, 23, 42, 0.6);
+	backdrop-filter: blur(4px);
+}
+
+.sendforce-modal-content {
+	position: relative;
+	background: var(--sf-card);
+	border-radius: var(--sf-radius);
+	box-shadow: var(--sf-shadow-lg);
+	max-width: 680px;
+	width: 90%;
+	max-height: 80vh;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	animation: sendforce-modal-in 0.2s ease;
+}
+
+@keyframes sendforce-modal-in {
+	from {
+		opacity: 0;
+		transform: scale(0.96) translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+.sendforce-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 18px 24px;
+	border-bottom: 1px solid var(--sf-border);
+}
+
+.sendforce-modal-header h3 {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.sendforce-modal-close {
+	background: none;
+	border: none;
+	font-size: 22px;
+	color: var(--sf-text-secondary);
+	cursor: pointer;
+	padding: 4px;
+	line-height: 1;
+	border-radius: 4px;
+	transition: all var(--sf-transition);
+}
+
+.sendforce-modal-close:hover {
+	color: var(--sf-text);
+	background: var(--sf-bg);
+}
+
+.sendforce-modal-body {
+	padding: 24px;
+	overflow-y: auto;
+}
+
+/* Detail Grid */
+.sendforce-detail-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.sendforce-detail-row {
+	display: grid;
+	grid-template-columns: 90px 1fr;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+.sendforce-detail-full {
+	grid-template-columns: 1fr;
+}
+
+.sendforce-detail-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.sendforce-detail-value {
+	font-size: 14px;
+	color: var(--sf-text);
+	word-break: break-word;
+}
+
+.sendforce-pre {
+	background: var(--sf-bg);
+	padding: 8px 12px;
+	border-radius: var(--sf-radius-xs);
+	font-size: 12px;
+	font-family: "SF Mono", Monaco, Consolas, monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+	margin: 0;
+}
+
+.sendforce-message-body {
+	background: var(--sf-bg);
+	padding: 12px 16px;
+	border-radius: var(--sf-radius-sm);
+	font-size: 13px;
+	font-family: "SF Mono", Monaco, Consolas, monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 260px;
+	overflow-y: auto;
+	margin-top: 6px;
+}
+
+/* ========================================
+   WP Settings Errors override
+   ======================================== */
+.sendforce-content .notice,
+.sendforce-content .updated,
+.sendforce-content .error {
+	border-radius: var(--sf-radius-xs);
+	margin: 0 0 16px;
+}
+
+/* ========================================
+   Provider Card Grid
+   ======================================== */
+/* Provider grid: show 3 rows by default, expand on click */
+.sendforce-provider-grid-wrap {
+	position: relative;
+}
+
+.sendforce-provider-grid-wrap.collapsed .sendforce-provider-card[data-extra="1"] {
+	display: none;
+}
+
+.sendforce-provider-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 12px;
+}
+
+.sendforce-provider-expand-wrap {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-top: 14px;
+}
+
+.sendforce-provider-expand-wrap::before,
+.sendforce-provider-expand-wrap::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: #E2E8F0;
+}
+
+.sendforce-provider-expand-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 0;
+	font-size: 13px;
+	font-weight: 500;
+	color: #64748B;
+	background: none;
+	border: none;
+	cursor: pointer;
+	transition: color 0.15s ease;
+	font-family: var(--sf-font);
+	white-space: nowrap;
+}
+
+.sendforce-provider-expand-btn:hover {
+	color: var(--sf-primary);
+}
+
+.sendforce-provider-expand-btn .sendforce-expand-icon {
+	transition: transform 0.25s ease;
+}
+
+.sendforce-provider-grid-wrap.expanded .sendforce-provider-expand-btn .sendforce-expand-icon {
+	transform: rotate(180deg);
+}
+
+.sendforce-provider-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 18px 10px;
+	background: #fff;
+	border: 1.5px solid var(--sf-border);
+	border-radius: var(--sf-radius-sm);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: center;
+	font-family: var(--sf-font);
+	outline: none;
+}
+
+.sendforce-provider-card:hover {
+	border-color: #C1C7CD;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+	transform: translateY(-1px);
+}
+
+.sendforce-provider-card.active {
+	border-color: var(--sf-primary);
+	background: #F0FDF9;
+	box-shadow: 0 0 0 1px var(--sf-primary);
+}
+
+.sendforce-provider-icon {
+	width: 62px;
+	height: 52px;
+	border-radius: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: -0.3px;
+	flex-shrink: 0;
+}
+
+.sendforce-provider-icon-svg {
+	background: #F8FAFC !important;
+	border: 1px solid #E2E8F0;
+	width: 62px;
+	height: 52px;
+	border-radius: 12px;
+	padding: 6px;
+	overflow: hidden;
+}
+
+.sendforce-provider-icon-svg img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+.sendforce-provider-name {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--sf-text);
+	line-height: 1.3;
+}
+
+.sendforce-provider-card.active .sendforce-provider-name {
+	font-weight: 600;
+}
+
+/* API badge on provider cards */
+.sendforce-provider-api-badge {
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--sf-primary);
+	background: var(--sf-primary-light);
+	padding: 1px 5px;
+	border-radius: 3px;
+	line-height: 1.4;
+}
+
+/* ========================================
+   Connection Type Tabs (SMTP / API)
+   ======================================== */
+.sendforce-conn-tabs {
+	display: flex;
+	gap: 4px;
+	background: #F1F5F9;
+	border-radius: var(--sf-radius-sm);
+	padding: 4px;
+	width: fit-content;
+}
+
+.sendforce-conn-tab {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 24px;
+	font-size: 13px;
+	font-weight: 500;
+	font-family: var(--sf-font);
+	color: var(--sf-text-secondary);
+	background: transparent;
+	border: none;
+	border-radius: var(--sf-radius-xs);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.sendforce-conn-tab:hover {
+	color: var(--sf-text);
+}
+
+.sendforce-conn-tab.active {
+	color: var(--sf-text);
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	font-weight: 600;
+}
+
+.sendforce-conn-tab .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.sendforce-conn-desc {
+	margin-top: 10px;
+}
+
+/* ========================================
+   Connection Pill Badge
+   ======================================== */
+.sendforce-connection-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.sendforce-pill-connected {
+	background: var(--sf-success-light);
+	color: #16A34A;
+}
+
+.sendforce-pill-disconnected {
+	background: var(--sf-danger-light);
+	color: #DC2626;
+}
+
+.sendforce-pill-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.sendforce-pill-connected .sendforce-pill-dot {
+	background: #16A34A;
+	box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.sendforce-pill-disconnected .sendforce-pill-dot {
+	background: #DC2626;
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* ========================================
+   Stat Sub Label
+   ======================================== */
+.sendforce-stat-sub {
+	font-size: 11px;
+	color: var(--sf-text-muted);
+	margin-top: 2px;
+}
+
+/* ========================================
+   Setup Card
+   ======================================== */
+.sendforce-setup-card {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+	background: linear-gradient(135deg, #F0FDFA 0%, #E6FAF4 100%);
+	border: 1px solid #A7F3D0;
+	border-radius: var(--sf-radius);
+	padding: 28px;
+	margin-bottom: 24px;
+}
+
+.sendforce-setup-icon {
+	width: 56px;
+	height: 56px;
+	background: var(--sf-primary);
+	border-radius: var(--sf-radius);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.sendforce-setup-icon .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	color: #fff;
+}
+
+.sendforce-setup-content h2 {
+	font-size: 18px;
+	margin-bottom: 6px;
+}
+
+.sendforce-setup-content p {
+	color: var(--sf-text-secondary);
+	margin: 0 0 14px;
+	font-size: 14px;
+}
+
+.sendforce-setup-steps {
+	margin: 0 0 18px;
+	padding-left: 20px;
+	color: var(--sf-text-secondary);
+	font-size: 13px;
+	line-height: 1.8;
+}
+
+/* ========================================
+   Email Activity Chart
+   ======================================== */
+.sendforce-chart {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sendforce-chart-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.sendforce-chart-today {
+	font-weight: 600;
+}
+
+.sendforce-chart-label {
+	width: 52px;
+	font-size: 12px;
+	color: var(--sf-text-secondary);
+	text-align: right;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	line-height: 1.2;
+}
+
+.sendforce-chart-label small {
+	font-size: 9px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--sf-primary);
+	font-weight: 700;
+}
+
+.sendforce-chart-bar-wrap {
+	flex: 1;
+	display: flex;
+	gap: 2px;
+	min-height: 28px;
+	align-items: center;
+	background: var(--sf-border-light);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.sendforce-chart-bar {
+	height: 28px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	transition: width 0.4s ease;
+}
+
+.sendforce-chart-bar-sent {
+	background: var(--sf-primary);
+}
+
+.sendforce-chart-bar-failed {
+	background: var(--sf-danger);
+}
+
+.sendforce-chart-bar-empty {
+	background: transparent;
+	min-width: 0;
+}
+
+.sendforce-chart-bar-value {
+	font-size: 11px;
+	font-weight: 600;
+	color: #fff;
+}
+
+.sendforce-chart-bar-empty .sendforce-chart-bar-value {
+	color: var(--sf-text-muted);
+	font-weight: 400;
+}
+
+.sendforce-chart-total {
+	width: 28px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text);
+	text-align: right;
+	flex-shrink: 0;
+}
+
+/* ========================================
+   Email Statistics Line Chart
+   ======================================== */
+.sendforce-stat-chart-card .sendforce-card-header {
+	align-items: center;
+}
+
+.sendforce-chart-header-left {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	flex: 1;
+}
+
+.sendforce-chart-header-left h2 {
+	margin: 0;
+}
+
+.sendforce-chart-legend-inline {
+	display: flex;
+	gap: 14px;
+}
+
+.sendforce-chart-header-right {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.sendforce-select-sm {
+	height: 32px;
+	padding: 0 28px 0 10px;
+	font-size: 12px;
+	border-radius: var(--sf-radius-xs);
+	border: 1px solid var(--sf-border);
+	background: var(--sf-card);
+	color: var(--sf-text);
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+}
+
+.sendforce-select-sm:focus {
+	outline: none;
+	border-color: var(--sf-primary);
+	box-shadow: 0 0 0 3px rgba(29,209,161,0.15);
+}
+
+.sendforce-chart-body {
+	padding-top: 0 !important;
+}
+
+.sendforce-linechart-wrap {
+	position: relative;
+	height: 220px;
+	padding: 16px 4px 0;
+	transition: opacity 0.2s ease;
+}
+
+.sendforce-linechart-wrap.sendforce-chart-loading {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.sendforce-linechart-wrap canvas {
+	display: block;
+	width: 100% !important;
+	height: 100% !important;
+}
+
+/* Chart footer stats */
+.sendforce-chart-footer {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	padding: 16px 20px;
+	border-top: 1px solid var(--sf-border-light);
+	margin-top: 4px;
+}
+
+.sendforce-chart-foot-stat {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0 24px;
+	flex: 1;
+}
+
+.sendforce-chart-foot-stat:first-child {
+	padding-left: 0;
+}
+
+.sendforce-chart-foot-icon {
+	font-size: 20px;
+	color: var(--sf-text-muted);
+}
+
+.sendforce-chart-foot-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.sendforce-chart-foot-dot-sent   { background: var(--sf-primary); }
+.sendforce-chart-foot-dot-failed { background: var(--sf-danger); }
+
+.sendforce-chart-foot-num {
+	display: block;
+	font-size: 22px;
+	font-weight: 700;
+	color: var(--sf-text);
+	line-height: 1.1;
+}
+
+.sendforce-chart-foot-num-sent   { color: var(--sf-primary); }
+.sendforce-chart-foot-num-failed { color: var(--sf-danger); }
+
+.sendforce-chart-foot-label {
+	display: block;
+	font-size: 11px;
+	color: var(--sf-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-top: 2px;
+}
+
+.sendforce-chart-foot-divider {
+	width: 1px;
+	height: 36px;
+	background: var(--sf-border-light);
+	flex-shrink: 0;
+}
+
+.sendforce-chart-legend {
+	display: flex;
+	gap: 16px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--sf-border-light);
+}
+
+.sendforce-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-legend-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	display: inline-block;
+}
+
+.sendforce-legend-sent {
+	background: var(--sf-primary);
+}
+
+.sendforce-legend-failed {
+	background: var(--sf-danger);
+}
+
+/* ========================================
+   Dashboard Two-Column Layout
+   ======================================== */
+.sendforce-dashboard-columns {
+	display: grid;
+	grid-template-columns: 1fr 380px;
+	gap: 20px;
+}
+
+.sendforce-dashboard-main {
+	min-width: 0;
+}
+
+.sendforce-dashboard-side {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* ========================================
+   System Info
+   ======================================== */
+.sendforce-sysinfo {
+	margin-top: 12px;
+}
+
+.sendforce-sysinfo-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--sf-border-light);
+}
+
+.sendforce-sysinfo-row:last-child {
+	border-bottom: none;
+}
+
+.sendforce-sysinfo-label {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-sysinfo-value {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text);
+}
+
+.sendforce-sysinfo-ok {
+	color: #16A34A;
+}
+
+.sendforce-sysinfo-warn {
+	color: var(--sf-danger);
+}
+
+.sendforce-sysinfo-divider {
+	height: 1px;
+	background: var(--sf-border);
+	margin: 6px 0;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+/* Tablet */
+@media screen and (max-width: 1100px) {
+	.sendforce-dashboard-columns {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media screen and (max-width: 960px) {
+	.sendforce-stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.sendforce-quick-actions {
+		grid-template-columns: 1fr;
+	}
+
+	.sendforce-form-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.sendforce-setup-card {
+		flex-direction: column;
+	}
+
+	.sendforce-content {
+		padding: 14px 16px 60px;
+	}
+}
+
+/* Mobile (<=1024px): the SendForce topbar always reserves enough TOP
+   PADDING inside itself that whatever the WP admin bar does (overlap,
+   gap, miscalculated padding), the visible CONTENT (logo, brand text,
+   nav icons) is positioned well below any potential overlap zone. We
+   stop trying to fight WP's unpredictable admin-bar behavior at narrow
+   widths — instead we just make our content immune to it. */
+@media screen and ( max-width: 1024px ) {
+	.sendforce-app {
+		margin-top: 0 !important;
+	}
+
+	.sendforce-topbar {
+		position: static !important;
+		top: auto !important;
+		z-index: auto !important;
+	}
+
+	.sendforce-topbar-inner {
+		height: auto !important;
+		padding-top: 8px !important;
+		padding-bottom: 12px !important;
+	}
+
+	/* Hide the version label — saves room for nav icons. */
+	.sendforce-version {
+		display: none !important;
+	}
+}
+
+/* At narrower widths only (<=600px), also hide the brand text so all 8
+   nav icons can fit with a single envelope logo. */
+@media screen and ( max-width: 600px ) {
+	.sendforce-logo-text {
+		display: none !important;
+	}
+
+	.sendforce-nav {
+		flex: 1;
+		justify-content: space-around;
+		gap: 0;
+	}
+
+	.sendforce-nav-item {
+		padding: 6px 8px !important;
+	}
+}
+
+/* Mobile */
+@media screen and (max-width: 782px) {
+
+	/* Topbar compact — extra left padding compensates for .sendforce-app's -20px left margin */
+	.sendforce-topbar-inner {
+		padding: 0 12px 0 32px;
+		height: 48px;
+		gap: 8px;
+	}
+
+	.sendforce-topbar-left {
+		gap: 12px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* Hide labels, show only icons */
+	.sendforce-nav-label {
+		display: none;
+	}
+
+	.sendforce-nav {
+		gap: 0;
+	}
+
+	.sendforce-nav-item {
+		padding: 8px 12px;
+		border-radius: var(--sf-radius-xs);
+	}
+
+	.sendforce-nav-item .dashicons {
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+	}
+
+	.sendforce-logo-text {
+		font-size: 14px;
+	}
+
+	.sendforce-version {
+		display: none;
+	}
+
+	/* Content */
+	.sendforce-content {
+		padding: 16px 14px 60px;
+	}
+
+	.sendforce-page-header {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.sendforce-page-header h1 {
+		font-size: 22px;
+	}
+
+	/* Stats grid 2-col on mobile */
+	.sendforce-stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
+	}
+
+	.sendforce-stat-card {
+		padding: 14px;
+		gap: 10px;
+	}
+
+	.sendforce-stat-icon {
+		width: 38px;
+		height: 38px;
+	}
+
+	.sendforce-stat-icon .dashicons {
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+	}
+
+	.sendforce-stat-number {
+		font-size: 20px;
+	}
+
+	.sendforce-stat-label {
+		font-size: 11px;
+	}
+
+	.sendforce-stat-sub {
+		display: none;
+	}
+
+	/* Cards */
+	.sendforce-card {
+		border-radius: var(--sf-radius-sm);
+	}
+
+	.sendforce-card-header {
+		padding: 14px 16px;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.sendforce-card-body {
+		padding: 16px;
+	}
+
+	.sendforce-card-compact {
+		padding: 16px;
+	}
+
+	/* Forms */
+	.sendforce-form-grid {
+		gap: 16px;
+	}
+
+	.sendforce-input,
+	.sendforce-select {
+		height: 46px;
+		font-size: 16px; /* prevents iOS zoom */
+	}
+
+	/* Chart */
+	.sendforce-chart-label {
+		width: 40px;
+		font-size: 11px;
+	}
+
+	.sendforce-chart-bar {
+		height: 24px;
+	}
+
+	/* Tables */
+	.sendforce-table thead th {
+		padding: 10px 12px;
+		font-size: 10px;
+	}
+
+	.sendforce-table tbody td {
+		padding: 10px 12px;
+		font-size: 12px;
+	}
+
+	/* Search form in card header */
+	.sendforce-search-wrap {
+		width: 100%;
+	}
+
+	.sendforce-search-input {
+		width: 100% !important;
+	}
+
+	/* Filter tabs wrap */
+	.sendforce-filter-tabs {
+		flex-wrap: wrap;
+	}
+
+	/* Quick test */
+	.sendforce-inline-form {
+		flex-direction: column;
+	}
+
+	.sendforce-inline-form .sendforce-input {
+		max-width: none;
+	}
+
+	/* Connection pill */
+	.sendforce-header-actions {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.sendforce-connection-pill {
+		font-size: 11px;
+		padding: 4px 10px;
+	}
+
+	/* Buttons */
+	.sendforce-btn {
+		font-size: 12px;
+		padding: 7px 12px;
+	}
+
+	.sendforce-btn-lg {
+		width: 100%;
+		justify-content: center;
+		padding: 12px;
+	}
+
+	/* Queue stats mini */
+	.sendforce-stats-sm {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	/* Modal */
+	.sendforce-modal-content {
+		width: 95%;
+		margin: 0 auto;
+		max-height: 85vh;
+	}
+
+	.sendforce-detail-row {
+		grid-template-columns: 1fr;
+		gap: 4px;
+	}
+}
+
+/* ========================================
+   Email Test Tab
+   ======================================== */
+.sendforce-email-test-layout {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: 24px;
+	align-items: start;
+}
+
+.sendforce-email-test-main {
+	min-width: 0;
+}
+
+/* Connection summary strip */
+.sendforce-test-connection-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0;
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-sm);
+	overflow: hidden;
+	margin-bottom: 24px;
+	background: var(--sf-border-light);
+}
+
+.sendforce-test-conn-item {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 20px;
+	flex: 1;
+	min-width: 120px;
+	background: var(--sf-card);
+	border-right: 1px solid var(--sf-border);
+}
+
+.sendforce-test-conn-item:last-child {
+	border-right: none;
+}
+
+.sendforce-test-conn-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--sf-text-muted);
+}
+
+.sendforce-test-conn-value {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.sendforce-provider-dot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	margin-right: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	vertical-align: middle;
+	background: #94A3B8;
+	box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.18);
+}
+.sendforce-provider-dot-ok {
+	background: #22C55E;
+	box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+}
+.sendforce-provider-dot-error {
+	background: #EF4444;
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
+}
+
+/* Badges */
+.sendforce-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+}
+
+.sendforce-badge-blue {
+	background: var(--sf-info-light);
+	color: var(--sf-info);
+}
+
+.sendforce-badge-gray {
+	background: #F1F5F9;
+	color: #64748B;
+}
+
+/* Monospace helper */
+.sendforce-monospace {
+	font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 12px;
+}
+
+/* Test input row */
+.sendforce-test-form {
+	margin-bottom: 24px;
+}
+
+.sendforce-test-input-row {
+	display: flex;
+	gap: 10px;
+	align-items: stretch;
+}
+
+.sendforce-test-input-row .sendforce-input {
+	flex: 1;
+}
+
+/* Result banner */
+.sendforce-test-result-banner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 18px;
+	border-radius: var(--sf-radius-sm);
+	font-weight: 600;
+	font-size: 14px;
+	margin-bottom: 16px;
+}
+
+.sendforce-test-result-banner.success {
+	background: var(--sf-success-light);
+	color: #15803D;
+	border: 1px solid #BBF7D0;
+}
+
+.sendforce-test-result-banner.error {
+	background: var(--sf-danger-light);
+	color: #B91C1C;
+	border: 1px solid #FECACA;
+}
+
+.sendforce-test-result-icon {
+	font-size: 20px;
+	line-height: 1;
+}
+
+/* SMTP debug log */
+.sendforce-smtp-log-wrap {
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-sm);
+	overflow: hidden;
+}
+
+.sendforce-smtp-log-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	background: #1E293B;
+	color: #94A3B8;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.sendforce-smtp-log-header .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+}
+
+.sendforce-smtp-log {
+	background: #0F172A;
+	color: #E2E8F0;
+	font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 12px;
+	line-height: 1.7;
+	padding: 16px;
+	margin: 0;
+	max-height: 360px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+/* Notice box */
+.sendforce-notice {
+	display: flex;
+	gap: 14px;
+	padding: 16px;
+	border-radius: var(--sf-radius-sm);
+	margin-bottom: 24px;
+}
+
+.sendforce-notice-warning {
+	background: var(--sf-warning-light);
+	border: 1px solid #FDE68A;
+	color: #92400E;
+}
+
+.sendforce-notice .dashicons {
+	font-size: 20px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.sendforce-notice p {
+	margin: 4px 0 10px;
+	font-size: 13px;
+}
+
+/* Button icon spacing */
+.sendforce-btn-icon {
+	font-size: 16px !important;
+	width: 16px !important;
+	height: 16px !important;
+	margin-right: 2px;
+	vertical-align: middle;
+}
+
+/* Tip list */
+.sendforce-tip-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.sendforce-tip-list li {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	line-height: 1.5;
+}
+
+.sendforce-tip-icon {
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.sendforce-tip-green {
+	color: var(--sf-success) !important;
+}
+
+/* What-gets-sent preview */
+.sendforce-test-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-sm);
+	overflow: hidden;
+}
+
+.sendforce-test-preview-row {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--sf-border);
+}
+
+.sendforce-test-preview-row:last-child {
+	border-bottom: none;
+}
+
+.sendforce-test-preview-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--sf-text-muted);
+}
+
+.sendforce-test-preview-value {
+	font-size: 12.5px;
+	color: var(--sf-text);
+	word-break: break-all;
+}
+
+/* Sidebar card h3 size */
+.sendforce-email-test-sidebar .sendforce-card-header h3 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0;
+}
+
+/* Responsive */
+@media screen and (max-width: 960px) {
+	.sendforce-email-test-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.sendforce-email-test-sidebar {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+	}
+}
+
+@media screen and (max-width: 640px) {
+	.sendforce-test-connection-summary {
+		flex-direction: column;
+	}
+
+	.sendforce-test-conn-item {
+		border-right: none;
+		border-bottom: 1px solid var(--sf-border);
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.sendforce-test-conn-item:last-child {
+		border-bottom: none;
+	}
+
+	.sendforce-test-input-row {
+		flex-direction: column;
+	}
+
+	.sendforce-email-test-sidebar {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ========================================
+   Alerts Tab
+   ======================================== */
+.sendforce-alerts-layout {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+	align-items: start;
+}
+
+/* Summary form toggle row */
+.sendforce-form-row-toggle {
+	padding: 4px 0;
+}
+
+/* Day checkboxes */
+.sendforce-alerts-days {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.sendforce-day-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.sendforce-day-checkbox input[type="checkbox"] {
+	margin: 0;
+	cursor: pointer;
+}
+
+.sendforce-day-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text);
+	background: var(--sf-border-light);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius-xs);
+	padding: 4px 10px;
+	transition: background var(--sf-transition), border-color var(--sf-transition);
+	line-height: 1.4;
+}
+
+.sendforce-day-checkbox input[type="checkbox"]:checked + .sendforce-day-label {
+	background: var(--sf-primary-light);
+	border-color: var(--sf-primary);
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-day-checkbox input[type="checkbox"] {
+	display: none;
+}
+
+/* Channel list */
+.sendforce-channels-list {
+	display: flex;
+	flex-direction: column;
+}
+
+.sendforce-channel-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 0;
+	border-bottom: 1px solid var(--sf-border-light);
+}
+
+.sendforce-channel-row:last-child {
+	border-bottom: none;
+}
+
+.sendforce-channel-icon {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.sendforce-channel-icon svg {
+	width: 20px;
+	height: 20px;
+	display: block;
+	color: #fff;
+}
+
+.sendforce-channel-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.sendforce-channel-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sf-text);
+}
+
+.sendforce-channel-status {
+	flex-shrink: 0;
+}
+
+.sendforce-channel-actions {
+	flex-shrink: 0;
+}
+
+/* Toggle slider */
+.sendforce-toggle-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.sendforce-toggle-label-sm .sendforce-toggle-wrap {
+	width: 36px;
+	height: 20px;
+}
+
+.sendforce-toggle-label-sm .sendforce-toggle-slider:before {
+	width: 14px;
+	height: 14px;
+	bottom: 3px;
+	left: 3px;
+}
+
+.sendforce-toggle-label-sm .sendforce-toggle-input:checked + .sendforce-toggle-slider:before {
+	transform: translateX(16px);
+}
+
+.sendforce-toggle-wrap {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 24px;
+	flex-shrink: 0;
+}
+
+.sendforce-toggle-input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+	position: absolute;
+}
+
+.sendforce-toggle-slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--sf-border);
+	border-radius: 34px;
+	transition: background var(--sf-transition);
+}
+
+.sendforce-toggle-slider:before {
+	position: absolute;
+	content: '';
+	width: 18px;
+	height: 18px;
+	bottom: 3px;
+	left: 3px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform var(--sf-transition);
+	box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.sendforce-toggle-input:checked + .sendforce-toggle-slider {
+	background: var(--sf-primary);
+}
+
+.sendforce-toggle-input:checked + .sendforce-toggle-slider:before {
+	transform: translateX(20px);
+}
+
+.sendforce-toggle-text {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--sf-text);
+}
+
+/* Textarea — element-qualified to beat the textarea.sendforce-input base rule. */
+.sendforce-textarea,
+textarea.sendforce-textarea {
+	height: auto;
+	padding: 10px 14px;
+	resize: vertical;
+	font-family: var(--sf-font);
+	line-height: 1.5;
+}
+
+/* Modal footer */
+.sendforce-modal-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 14px 20px;
+	border-top: 1px solid var(--sf-border);
+	background: var(--sf-border-light);
+	border-radius: 0 0 var(--sf-radius) var(--sf-radius);
+}
+
+/* Modal small variant */
+.sendforce-modal-content-sm {
+	max-width: 480px;
+}
+
+/* Notice inline */
+.sendforce-notice-inline {
+	padding: 10px 14px;
+	border-radius: var(--sf-radius-xs);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.sendforce-notice-inline.success {
+	background: var(--sf-success-light);
+	color: #15803D;
+	border: 1px solid #BBF7D0;
+}
+
+.sendforce-notice-inline.error {
+	background: var(--sf-danger-light);
+	color: #B91C1C;
+	border: 1px solid #FECACA;
+}
+
+
+/* Btn outline */
+.sendforce-btn-outline {
+	background: transparent;
+	color: var(--sf-text-secondary);
+	border: 1px solid var(--sf-border);
+}
+
+.sendforce-btn-outline:hover {
+	background: var(--sf-border-light);
+	color: var(--sf-text);
+}
+
+/* Responsive alerts */
+@media screen and (max-width: 960px) {
+	.sendforce-alerts-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Small phones */
+@media screen and (max-width: 480px) {
+	.sendforce-logo-img {
+		height: 24px;
+	}
+
+	.sendforce-stats-grid {
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.sendforce-stat-card {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 12px;
+	}
+}
+
+/* ========================================
+   Settings Two-Column Layout
+   ======================================== */
+.sendforce-settings-columns {
+	display: grid;
+	grid-template-columns: 1fr 340px;
+	gap: 24px;
+	align-items: start;
+}
+
+.sendforce-settings-main {
+	min-width: 0;
+}
+
+.sendforce-settings-sidebar {
+	position: sticky;
+	top: 32px;
+}
+
+/* General Settings card sections */
+.sendforce-gs-section {
+	padding: 16px 0;
+	border-bottom: 1px solid var(--sf-border);
+}
+
+.sendforce-gs-section:first-child {
+	padding-top: 0;
+}
+
+.sendforce-gs-section:last-of-type {
+	border-bottom: none;
+}
+
+.sendforce-gs-section-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sf-text);
+	margin: 0 0 10px;
+}
+
+.sendforce-gs-divider {
+	border: none;
+	border-top: 2px solid var(--sf-border);
+	margin: 4px 0;
+}
+
+.sendforce-select-full {
+	width: 100%;
+}
+
+@media screen and (max-width: 1100px) {
+	.sendforce-settings-columns {
+		grid-template-columns: 1fr;
+	}
+	.sendforce-settings-sidebar {
+		position: static;
+	}
+}
+
+/* ========================================
+   Active Email Connections Table
+   ======================================== */
+.sendforce-connections-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.sendforce-connections-table thead th {
+	padding: 10px 16px;
+	text-align: left;
+	font-weight: 600;
+	font-size: 12px;
+	color: var(--sf-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	border-bottom: 1px solid var(--sf-border);
+	background: var(--sf-border-light);
+}
+
+.sendforce-connections-table tbody tr {
+	border-bottom: 1px solid var(--sf-border);
+	transition: background var(--sf-transition);
+}
+
+.sendforce-connections-table tbody tr:last-child {
+	border-bottom: none;
+}
+
+.sendforce-connections-table tbody tr:hover {
+	background: var(--sf-border-light);
+}
+
+.sendforce-connections-table td {
+	padding: 12px 16px;
+	vertical-align: middle;
+}
+
+.sendforce-conn-actions {
+	text-align: right;
+	white-space: nowrap;
+}
+
+.sendforce-conn-actions .sendforce-btn-link {
+	margin-left: 8px;
+	font-size: 12px;
+}
+
+/* Polished Edit / Delete row-action buttons */
+.sendforce-action-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	margin-left: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--sf-text-secondary, #475569);
+	background: #fff;
+	border: 1px solid var(--sf-border, #E2E8F0);
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.sendforce-action-btn .dashicons {
+	font-size: 15px;
+	width: 15px;
+	height: 15px;
+	line-height: 1;
+}
+.sendforce-action-btn:hover,
+.sendforce-action-btn:focus {
+	outline: none;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+
+/* Edit — brand teal on hover */
+.sendforce-action-btn-edit:hover,
+.sendforce-action-btn-edit:focus {
+	color: var(--sf-primary-hover);
+	border-color: #A7F0D9;
+	background: var(--sf-primary-light);
+}
+
+/* Delete — destructive red on hover */
+.sendforce-action-btn-delete {
+	color: #B91C1C;
+	border-color: #FECACA;
+	background: #FEF2F2;
+}
+.sendforce-action-btn-delete:hover,
+.sendforce-action-btn-delete:focus {
+	color: #fff;
+	background: #DC2626;
+	border-color: #DC2626;
+}
+
+/* Hide the text label on narrow viewports — icon-only */
+@media (max-width: 782px) {
+	.sendforce-action-btn-label {
+		display: none;
+	}
+	.sendforce-action-btn {
+		padding: 6px 8px;
+	}
+}
+
+/* Connection badges */
+.sendforce-conn-badge {
+	display: inline-block;
+	padding: 2px 7px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	background: var(--sf-border);
+	color: var(--sf-text-secondary);
+	margin-left: 6px;
+	vertical-align: middle;
+}
+
+.sendforce-conn-badge-active {
+	background: var(--sf-primary-light);
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-conn-badge-fallback {
+	background: var(--sf-info-light);
+	color: var(--sf-info);
+}
+
+.sendforce-no-pad {
+	padding: 0 !important;
+}
+
+/* Connection form card spacing */
+#sendforce-connection-form-card .sendforce-provider-grid {
+	margin-bottom: 0;
+}
+
+#sendforce-connection-form-card .sendforce-card {
+	margin-top: 16px;
+	box-shadow: none;
+	border: 1px solid var(--sf-border);
+}
+
+/* ========================================
+   Sender Identity Card (bottom-left)
+   ======================================== */
+.sendforce-sender-card {
+	margin-top: 20px;
+}
+
+.sendforce-sender-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+}
+
+.sendforce-sender-actions {
+	margin-top: 20px;
+	padding-top: 18px;
+	border-top: 1px solid var(--sf-border);
+}
+
+@media ( max-width: 900px ) {
+	.sendforce-sender-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ========================================
+   Confirm / Delete Modal
+   ======================================== */
+.sendforce-confirm-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.55);
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+	z-index: 99998;
+	animation: sf-fade-in 0.18s ease;
+}
+
+.sendforce-confirm-dialog {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%) scale(1);
+	z-index: 99999;
+	background: #fff;
+	border-radius: 16px;
+	padding: 36px 32px 28px;
+	width: 100%;
+	max-width: 400px;
+	text-align: center;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+	animation: sf-dialog-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sf-fade-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@keyframes sf-dialog-pop {
+	from { opacity: 0; transform: translate(-50%, -50%) scale(0.88); }
+	to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.sendforce-confirm-icon {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: var(--sf-danger-light);
+	color: var(--sf-danger);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto 20px;
+}
+
+.sendforce-confirm-title {
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--sf-text);
+	margin: 0 0 10px;
+	line-height: 1.3;
+}
+
+.sendforce-confirm-message {
+	font-size: 14px;
+	color: var(--sf-text-secondary);
+	margin: 0 0 28px;
+	line-height: 1.6;
+}
+
+.sendforce-confirm-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+}
+
+.sendforce-confirm-actions .sendforce-btn {
+	flex: 1;
+	justify-content: center;
+}
+
+.sendforce-btn-ghost {
+	background: transparent;
+	border: 1.5px solid var(--sf-border);
+	color: var(--sf-text-secondary);
+	font-weight: 600;
+}
+
+.sendforce-btn-ghost:hover {
+	background: var(--sf-border-light);
+	border-color: #CBD5E1;
+	color: var(--sf-text);
+}
+
+.sendforce-btn-danger {
+	background: var(--sf-danger);
+	border: none;
+	color: #fff;
+	font-weight: 600;
+}
+
+.sendforce-btn-danger:hover {
+	background: #DC2626;
+	color: #fff;
+}
+
+/* ========================================
+   About Page
+   ======================================== */
+.sendforce-about-wrap {
+	max-width: 1100px;
+}
+
+/* Hero */
+.sendforce-about-hero {
+	background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0e7490 100%);
+	border-radius: 16px;
+	margin-bottom: 28px;
+	overflow: hidden;
+	position: relative;
+}
+
+.sendforce-about-hero::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(ellipse at 80% 50%, rgba(29, 209, 161, 0.18) 0%, transparent 60%);
+	pointer-events: none;
+}
+
+.sendforce-about-hero-inner {
+	display: flex;
+	align-items: center;
+	gap: 28px;
+	padding: 40px 40px;
+	position: relative;
+	z-index: 1;
+}
+
+.sendforce-about-logo-wrap {
+	flex-shrink: 0;
+	width: 80px;
+	height: 80px;
+	background: rgba(255,255,255,0.1);
+	border-radius: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(8px);
+	border: 1px solid rgba(255,255,255,0.15);
+}
+
+.sendforce-about-logo {
+	width: 52px;
+	height: 52px;
+	object-fit: contain;
+}
+
+.sendforce-about-plugin-name {
+	font-size: 28px;
+	font-weight: 800;
+	color: #fff;
+	margin: 0 0 8px;
+	line-height: 1.2;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.sendforce-about-version {
+	font-size: 13px;
+	font-weight: 600;
+	color: #1dd1a1;
+	background: rgba(29, 209, 161, 0.15);
+	border: 1px solid rgba(29, 209, 161, 0.3);
+	border-radius: 20px;
+	padding: 3px 12px;
+	vertical-align: middle;
+}
+
+.sendforce-about-tagline {
+	font-size: 15px;
+	color: rgba(255,255,255,0.75);
+	margin: 0 0 22px;
+	line-height: 1.6;
+}
+
+.sendforce-about-hero-actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.sendforce-btn-outline-star {
+	background: transparent;
+	border: 1.5px solid rgba(255,255,255,0.3);
+	color: #fff;
+	font-weight: 600;
+}
+
+.sendforce-btn-outline-star:hover {
+	background: rgba(255,255,255,0.1);
+	border-color: rgba(255,255,255,0.5);
+	color: #fff;
+}
+
+/* Body layout */
+.sendforce-about-body {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: 24px;
+	align-items: start;
+}
+
+.sendforce-about-card {
+	margin-bottom: 0;
+}
+
+.sendforce-about-main {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+/* Company block */
+.sendforce-about-company-body {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+}
+
+.sendforce-about-company-logo {
+	flex-shrink: 0;
+}
+
+.sendforce-about-company-icon {
+	width: 60px;
+	height: 60px;
+	background: linear-gradient(135deg, #1dd1a1, #0e7490);
+	border-radius: 14px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	font-weight: 800;
+	color: #fff;
+	letter-spacing: 1px;
+}
+
+.sendforce-about-company-text p {
+	margin: 0 0 12px;
+	color: var(--sf-text-secondary);
+	font-size: 14px;
+	line-height: 1.7;
+}
+
+.sendforce-about-company-text p:last-child {
+	margin-bottom: 0;
+}
+
+/* Features grid */
+.sendforce-about-features-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+}
+
+.sendforce-about-feature {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+
+.sendforce-about-feature-icon {
+	flex-shrink: 0;
+	width: 42px;
+	height: 42px;
+	border-radius: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-about-feature h4 {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--sf-text);
+	margin: 0 0 4px;
+}
+
+.sendforce-about-feature p {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	margin: 0;
+	line-height: 1.6;
+}
+
+/* Feature icon colours */
+.sendforce-about-fi-green  { background: #DCFCE7; color: #16a34a; }
+.sendforce-about-fi-blue   { background: #DBEAFE; color: #2563eb; }
+.sendforce-about-fi-purple { background: #EDE9FE; color: #7c3aed; }
+.sendforce-about-fi-orange { background: #FEF3C7; color: #d97706; }
+.sendforce-about-fi-teal   { background: #CCFBF1; color: #0d9488; }
+.sendforce-about-fi-red    { background: #FEE2E2; color: #dc2626; }
+
+/* Sidebar meta list */
+.sendforce-about-meta-list {
+	padding: 0 !important;
+}
+
+.sendforce-about-meta-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 11px 20px;
+	border-bottom: 1px solid var(--sf-border);
+	font-size: 13px;
+}
+
+.sendforce-about-meta-row:last-child {
+	border-bottom: none;
+}
+
+.sendforce-about-meta-label {
+	color: var(--sf-text-secondary);
+	font-weight: 500;
+}
+
+.sendforce-about-meta-value {
+	color: var(--sf-text);
+	font-weight: 600;
+}
+
+.sendforce-about-meta-value a {
+	color: var(--sf-primary-hover);
+	text-decoration: none;
+}
+
+.sendforce-about-meta-value a:hover {
+	text-decoration: underline;
+}
+
+/* Helpful links */
+.sendforce-about-links {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-top: 4px !important;
+	padding-bottom: 4px !important;
+}
+
+.sendforce-about-link {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	text-decoration: none;
+	color: var(--sf-text);
+	font-size: 13px;
+	font-weight: 500;
+	transition: background var(--sf-transition);
+}
+
+.sendforce-about-link:hover {
+	background: var(--sf-border-light);
+	color: var(--sf-text);
+}
+
+.sendforce-about-link-icon {
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-about-link span {
+	flex: 1;
+}
+
+.sendforce-about-link-arrow {
+	color: var(--sf-text-muted);
+	flex-shrink: 0;
+}
+
+/* Rate card */
+.sendforce-about-rate-card {
+	background: linear-gradient(135deg, #f0fdf4, #ecfeff) !important;
+	border: 1px solid #bbf7d0 !important;
+	text-align: center;
+}
+
+.sendforce-about-rate-card .sendforce-card-body {
+	padding: 28px 24px !important;
+}
+
+.sendforce-about-rate-stars {
+	font-size: 24px;
+	margin-bottom: 12px;
+}
+
+.sendforce-about-rate-card h3 {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--sf-text);
+	margin: 0 0 8px;
+}
+
+.sendforce-about-rate-card p {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	margin: 0 0 20px;
+	line-height: 1.6;
+}
+
+.sendforce-about-sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+@media ( max-width: 960px ) {
+	.sendforce-about-body {
+		grid-template-columns: 1fr;
+	}
+	.sendforce-about-features-grid {
+		grid-template-columns: 1fr;
+	}
+	.sendforce-about-hero-inner {
+		flex-direction: column;
+		text-align: center;
+	}
+}
+
+/* ========================================
+   Smart Routing — inline card UI (1.0.19)
+   ======================================== */
+
+/* Master "Enable Smart Routing" toggle band */
+.sendforce-route-master {
+	margin-bottom: 14px;
+	padding: 14px 18px;
+}
+
+.sendforce-route-master-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.sendforce-route-master-toggle {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.sendforce-route-master-text {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.35;
+}
+
+.sendforce-route-master-text strong {
+	font-size: 14px;
+	color: var(--sf-text);
+}
+
+.sendforce-route-master-text .sendforce-text-muted {
+	font-size: 12px;
+}
+
+.sendforce-route-master-status {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid var(--sf-border);
+}
+
+.sendforce-route-master-status.is-on {
+	color: var(--sf-success);
+	background: var(--sf-success-light);
+	border-color: #BBF7D0;
+}
+
+.sendforce-route-master-status.is-off {
+	color: var(--sf-text-secondary);
+	background: var(--sf-border-light);
+}
+
+/* Routes list: stacked cards, comfortable spacing. */
+.sendforce-routes-list {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin-bottom: 20px;
+}
+
+/* Empty state */
+.sendforce-route-empty {
+	text-align: center;
+	padding: 32px 24px;
+}
+
+/* Headline icon only — scoped so button icons inside the empty state aren't affected. */
+.sendforce-route-empty-inner > .dashicons {
+	font-size: 36px;
+	width: 36px;
+	height: 36px;
+	color: var(--sf-primary);
+	margin-bottom: 8px;
+}
+
+.sendforce-route-empty-inner h2 {
+	font-size: 18px;
+	margin: 0 0 8px;
+}
+
+.sendforce-route-empty-inner p {
+	max-width: 540px;
+	margin: 0 auto 16px;
+	line-height: 1.55;
+}
+
+.sendforce-route-empty-actions {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 20px;
+}
+
+.sendforce-route-presets {
+	border-top: 1px dashed var(--sf-border);
+	padding-top: 18px;
+	margin-top: 6px;
+}
+
+.sendforce-route-presets-label {
+	font-size: 13px;
+	color: var(--sf-text-secondary);
+	margin: 0 0 10px;
+	font-weight: 500;
+}
+
+.sendforce-route-presets-grid {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+}
+
+/* Individual rule card */
+.sendforce-route-card {
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius);
+	box-shadow: var(--sf-shadow);
+	/* overflow: visible so dropdown panels (custom-select, etc.) can escape
+	   the card boundary. Header/footer round their own corners below. */
+	overflow: visible;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sendforce-route-card.is-disabled {
+	opacity: 0.7;
+}
+
+.sendforce-route-card.is-dirty {
+	border-color: #F59E0B;
+	box-shadow: 0 0 0 3px rgba( 245, 158, 11, 0.12 );
+}
+
+.sendforce-route-card.is-new {
+	border-color: var(--sf-primary);
+	box-shadow: 0 0 0 3px rgba( 29, 209, 161, 0.12 );
+}
+
+/* Card header bar */
+.sendforce-route-card-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--sf-border-light);
+	background: #FAFBFC;
+	border-radius: var(--sf-radius) var(--sf-radius) 0 0;
+}
+
+.sendforce-route-card-index {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text-secondary);
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: 999px;
+	padding: 2px 10px;
+	min-width: 40px;
+	text-align: center;
+}
+
+.sendforce-route-card-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--sf-text);
+	max-width: 40%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sendforce-route-card-target {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-primary);
+	background: var(--sf-primary-light);
+	border-radius: 999px;
+	padding: 3px 10px;
+}
+
+.sendforce-route-card-target .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+}
+
+.sendforce-route-card-warning {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #92400E;
+	background: #FEF3C7;
+	border: 1px solid #FCD34D;
+	border-radius: 999px;
+	padding: 2px 9px;
+	margin-left: 6px;
+	cursor: help;
+}
+
+.sendforce-route-card-warning .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	color: #B45309;
+}
+
+.sendforce-route-card-flex {
+	flex: 1;
+}
+
+.sendforce-route-card-saved-flag {
+	font-size: 11px;
+	color: var(--sf-success);
+	font-weight: 600;
+	margin-right: 4px;
+}
+
+.sendforce-route-card.is-dirty .sendforce-route-card-saved-flag::before {
+	content: '● Unsaved';
+	color: #B45309;
+}
+
+.sendforce-route-card-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	color: var(--sf-text-secondary);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.sendforce-route-card-btn:hover,
+.sendforce-route-card-btn:focus {
+	background: var(--sf-card);
+	border-color: var(--sf-border);
+	color: var(--sf-text);
+	outline: none;
+}
+
+.sendforce-route-card-btn .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.sendforce-route-card-btn.sendforce-route-delete:hover {
+	color: var(--sf-danger);
+	background: var(--sf-danger-light);
+	border-color: #FECACA;
+}
+
+/* Card body */
+.sendforce-route-card-body {
+	padding: 18px 20px;
+}
+
+.sendforce-route-row {
+	display: flex;
+	gap: 16px;
+	margin-top: 16px;
+	flex-wrap: wrap;
+}
+
+.sendforce-route-row-action {
+	flex: 1;
+	min-width: 240px;
+}
+
+.sendforce-route-row-toggle {
+	flex: 0 0 auto;
+	min-width: 140px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+/* Condition rows — cell wrappers own the flex sizing so layout works whether
+   the inner element is a native <select>, a custom-select .sf-dd wrapper, or
+   a text <input>. */
+.sendforce-route-conditions .sendforce-route-cond {
+	display: flex;
+	gap: 8px;
+	align-items: stretch;
+	margin-bottom: 8px;
+}
+
+.sendforce-route-conditions .sendforce-route-cond > .sendforce-route-cond-cell {
+	min-width: 0;
+}
+
+.sendforce-route-conditions .sendforce-route-cond-cell--type  { flex: 1.4; }
+.sendforce-route-conditions .sendforce-route-cond-cell--op    { flex: 0.9; }
+.sendforce-route-conditions .sendforce-route-cond-cell--value { flex: 1.4; }
+
+/* Invalid field highlight */
+.sendforce-route-card .sendforce-route-invalid,
+.sendforce-route-card .sendforce-route-invalid:focus {
+	border-color: var(--sf-danger) !important;
+	box-shadow: 0 0 0 3px rgba( 239, 68, 68, 0.18 ) !important;
+}
+
+/* Per-card validation error message in the footer */
+.sendforce-route-error {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-danger);
+	background: var(--sf-danger-light);
+	border: 1px solid #FECACA;
+	padding: 4px 10px;
+	border-radius: 6px;
+	margin-right: auto;
+}
+
+.sendforce-route-conditions .sendforce-action-btn-delete {
+	flex: 0 0 auto;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	margin: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-route-conditions .sendforce-action-btn-delete .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+/* "Add Condition" — dashed lightweight affordance */
+.sendforce-route-add-cond {
+	width: 100%;
+	justify-content: center;
+	border-style: dashed;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-route-add-cond:hover,
+.sendforce-route-add-cond:focus {
+	color: var(--sf-primary-hover);
+	border-color: var(--sf-primary);
+	background: var(--sf-primary-light);
+}
+
+/* Force teal focus rings inside cards (WP admin can override on selects). */
+.sendforce-route-card .sendforce-input:focus,
+.sendforce-route-card .sendforce-select:focus {
+	border-color: var(--sf-primary);
+	box-shadow: 0 0 0 3px rgba( 29, 209, 161, 0.18 );
+	outline: none;
+}
+
+/* Card footer — Save / Revert */
+.sendforce-route-card-footer {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 16px;
+	border-top: 1px solid var(--sf-border-light);
+	background: #FAFBFC;
+	border-radius: 0 0 var(--sf-radius) var(--sf-radius);
+}
+
+.sendforce-route-dirty-hint {
+	font-size: 12px;
+	font-weight: 600;
+	color: #B45309;
+	background: var(--sf-warning-light);
+	padding: 3px 10px;
+	border-radius: 999px;
+	display: none;
+}
+
+.sendforce-route-card.is-dirty .sendforce-route-dirty-hint {
+	display: inline-block;
+}
+
+.sendforce-route-card-footer > .sendforce-route-dirty-hint + * {
+	margin-left: auto;
+}
+
+.sendforce-route-card-footer > :not( .sendforce-route-dirty-hint ):first-child {
+	margin-left: auto;
+}
+
+/* ========================================
+   Confirm / Alert dialog (replaces native browser confirm/alert)
+   ======================================== */
+
+.sendforce-dialog-backdrop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba( 15, 23, 42, 0.55 );
+	backdrop-filter: blur( 4px );
+	-webkit-backdrop-filter: blur( 4px );
+	z-index: 200000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.sendforce-dialog-backdrop.is-open {
+	opacity: 1;
+}
+
+.sendforce-dialog {
+	background: var(--sf-card);
+	border-radius: var(--sf-radius);
+	box-shadow: var(--sf-shadow-lg);
+	max-width: 440px;
+	width: 100%;
+	padding: 28px 28px 20px;
+	transform: translateY( 8px ) scale( 0.97 );
+	transition: transform 0.18s ease;
+	text-align: center;
+}
+
+.sendforce-dialog-backdrop.is-open .sendforce-dialog {
+	transform: translateY( 0 ) scale( 1 );
+}
+
+.sendforce-dialog-icon {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	margin: 0 auto 14px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-dialog-icon .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+}
+
+.sendforce-dialog-icon--danger {
+	background: var(--sf-danger-light);
+	color: var(--sf-danger);
+}
+
+.sendforce-dialog-icon--primary {
+	background: var(--sf-primary-light);
+	color: var(--sf-primary);
+}
+
+.sendforce-dialog-body h3 {
+	font-size: 18px;
+	font-weight: 700;
+	margin: 0 0 8px;
+	color: var(--sf-text);
+}
+
+.sendforce-dialog-body p {
+	font-size: 14px;
+	line-height: 1.55;
+	color: var(--sf-text-secondary);
+	margin: 0 0 20px;
+}
+
+.sendforce-dialog-footer {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+}
+
+.sendforce-dialog-footer .sendforce-btn {
+	min-width: 110px;
+	height: 40px;
+	padding: 0 18px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1;
+	border-radius: 8px;
+	justify-content: center;
+}
+
+.sendforce-dialog-footer .sendforce-btn-danger {
+	background: var(--sf-danger);
+	border-color: var(--sf-danger);
+	color: #fff;
+}
+
+.sendforce-dialog-footer .sendforce-btn-danger:hover,
+.sendforce-dialog-footer .sendforce-btn-danger:focus {
+	background: #DC2626;
+	border-color: #DC2626;
+	color: #fff;
+}
+
+/* ========================================
+   "What's Next" / Upcoming features tab
+   ======================================== */
+
+/* Hero band */
+.sendforce-upcoming-hero {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	padding: 24px;
+	margin-bottom: 24px;
+	background: linear-gradient( 135deg, var(--sf-primary-light) 0%, #fff 70% );
+	border: 1px solid #BBF0DD;
+}
+
+.sendforce-upcoming-hero-icon {
+	flex: 0 0 auto;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	background: var(--sf-primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 6px 14px -4px rgba( 29, 209, 161, 0.5 );
+}
+
+.sendforce-upcoming-hero-icon .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	color: #fff;
+}
+
+.sendforce-upcoming-hero-body h2 {
+	font-size: 18px;
+	font-weight: 700;
+	margin: 0 0 4px;
+	color: var(--sf-text);
+}
+
+.sendforce-upcoming-hero-body p {
+	margin: 0;
+	color: var(--sf-text-secondary);
+	line-height: 1.55;
+}
+
+/* Sections */
+.sendforce-upcoming-section {
+	margin-bottom: 28px;
+}
+
+.sendforce-upcoming-section-header {
+	margin-bottom: 14px;
+}
+
+.sendforce-upcoming-section-header h2 {
+	font-size: 16px;
+	font-weight: 700;
+	margin: 0 0 4px;
+	color: var(--sf-text);
+}
+
+.sendforce-upcoming-section-header p {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+/* Grid */
+.sendforce-upcoming-grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 280px, 1fr ) );
+	gap: 14px;
+}
+
+/* Cards */
+.sendforce-upcoming-card {
+	background: var(--sf-card);
+	border: 1px solid var(--sf-border);
+	border-radius: var(--sf-radius);
+	padding: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.sendforce-upcoming-card:hover {
+	border-color: var(--sf-primary);
+	box-shadow: var(--sf-shadow-md);
+	transform: translateY( -2px );
+}
+
+/* Subtle status accent stripe */
+.sendforce-upcoming-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: var(--sf-border);
+}
+
+.sendforce-upcoming-card--next::before     { background: var(--sf-primary); }
+.sendforce-upcoming-card--planned::before  { background: var(--sf-info); }
+.sendforce-upcoming-card--research::before { background: var(--sf-warning); }
+
+.sendforce-upcoming-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.sendforce-upcoming-card-icon {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--sf-primary-light);
+	color: var(--sf-primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sendforce-upcoming-card--planned  .sendforce-upcoming-card-icon { background: var(--sf-info-light);    color: var(--sf-info); }
+.sendforce-upcoming-card--research .sendforce-upcoming-card-icon { background: var(--sf-warning-light); color: var(--sf-warning); }
+
+.sendforce-upcoming-card-icon .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.sendforce-upcoming-card-status {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	padding: 4px 10px;
+	border-radius: 999px;
+}
+
+.sendforce-upcoming-card-status--next {
+	background: var(--sf-primary-light);
+	color: var(--sf-primary-hover);
+}
+
+.sendforce-upcoming-card-status--planned {
+	background: var(--sf-info-light);
+	color: var(--sf-info);
+}
+
+.sendforce-upcoming-card-status--research {
+	background: var(--sf-warning-light);
+	color: #B45309;
+}
+
+.sendforce-upcoming-card-title {
+	font-size: 15px;
+	font-weight: 700;
+	margin: 0;
+	color: var(--sf-text);
+}
+
+.sendforce-upcoming-card-blurb {
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--sf-text-secondary);
+	margin: 0;
+	flex: 1;
+}
+
+.sendforce-upcoming-card-foot {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-top: 10px;
+	border-top: 1px dashed var(--sf-border-light);
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sf-text-secondary);
+}
+
+.sendforce-upcoming-card-foot .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	color: var(--sf-text-muted);
+}
+
+/* CTA footer */
+.sendforce-upcoming-cta {
+	margin-top: 28px;
+	padding: 24px;
+	background: linear-gradient( 135deg, #FAFBFC 0%, #fff 100% );
+	border: 1px solid var(--sf-border);
+}
+
+.sendforce-upcoming-cta-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 24px;
+	flex-wrap: wrap;
+}
+
+.sendforce-upcoming-cta-inner h2 {
+	font-size: 16px;
+	font-weight: 700;
+	margin: 0 0 4px;
+	color: var(--sf-text);
+}
+
+.sendforce-upcoming-cta-inner p {
+	margin: 0;
+	color: var(--sf-text-secondary);
+	font-size: 13px;
+}
+
+.sendforce-upcoming-cta-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* "via rule:" badge in the email log */
+.sendforce-route-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--sf-primary);
+	background: var(--sf-primary-light);
+	border-radius: 999px;
+	padding: 2px 8px;
+}
+
+.sendforce-route-tag .dashicons {
+	font-size: 12px;
+	width: 12px;
+	height: 12px;
+}
+
+/* =========================================================
+   CHANGELOG (FAQ-style accordion inside the "What's New" tab)
+   ========================================================= */
+
+.sendforce-changelog-section {
+	margin-top: 32px;
+}
+
+.sendforce-changelog-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 1px 2px rgba(0,0,0,.03);
+}
+
+.sendforce-changelog-item {
+	border-bottom: 1px solid #f1f5f9;
+}
+
+.sendforce-changelog-item:last-child {
+	border-bottom: none;
+}
+
+/* Native <details>/<summary> accordion. Hide the default disclosure marker. */
+.sendforce-changelog-summary {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 18px;
+	cursor: pointer;
+	user-select: none;
+	list-style: none;
+	font-size: 14px;
+	color: #1d2327;
+	transition: background-color .12s ease;
+}
+
+.sendforce-changelog-summary::-webkit-details-marker { display: none; }
+.sendforce-changelog-summary::marker { content: ''; }
+
+.sendforce-changelog-summary:hover {
+	background: #f8fafc;
+}
+
+.sendforce-changelog-summary:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+.sendforce-changelog-summary-chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	color: #64748b;
+	transition: transform .15s ease;
+}
+
+.sendforce-changelog-item[open] > .sendforce-changelog-summary .sendforce-changelog-summary-chevron {
+	transform: rotate(90deg);
+}
+
+.sendforce-changelog-summary-version {
+	font-weight: 700;
+	font-size: 14px;
+	color: #1d2327;
+	min-width: 70px;
+}
+
+.sendforce-changelog-summary-count {
+	margin-left: auto;
+	color: #64748b;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.sendforce-changelog-current-badge {
+	display: inline-flex;
+	align-items: center;
+	background: #10b981;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 999px;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+}
+
+.sendforce-changelog-item--current {
+	background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+}
+
+.sendforce-changelog-item--current > .sendforce-changelog-summary {
+	border-left: 3px solid #10b981;
+	padding-left: 15px;
+}
+
+.sendforce-changelog-bullets {
+	margin: 0;
+	padding: 0 18px 14px 50px;
+	list-style: none;
+}
+
+.sendforce-changelog-bullets li {
+	position: relative;
+	padding: 6px 0 6px 16px;
+	color: #50575e;
+	line-height: 1.6;
+	font-size: 13.5px;
+}
+
+.sendforce-changelog-bullets li::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 14px;
+	width: 5px;
+	height: 5px;
+	background: #94a3b8;
+	border-radius: 50%;
+}
+
+.sendforce-changelog-item--current .sendforce-changelog-bullets li::before {
+	background: #10b981;
+}
+
+.sendforce-changelog-bullets code {
+	background: #f1f5f9;
+	color: #be185d;
+	padding: 1px 6px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-family: SFMono-Regular, Consolas, monospace;
+}
+
+.sendforce-changelog-bullets strong {
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.sendforce-changelog-footnote {
+	margin: 14px 0 0;
+	font-size: 13px;
+	text-align: right;
+}
+
+.sendforce-changelog-footnote a {
+	color: #64748b;
+	text-decoration: none;
+}
+
+.sendforce-changelog-footnote a:hover {
+	color: #2271b1;
+	text-decoration: underline;
+}
+
+.sendforce-changelog-footnote .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+	margin-left: 2px;
+}
+
+/* =========================================================
+   EMAIL TEST — Provider response panel (1.0.28)
+   Shows the raw HTTP body returned by the provider when a
+   test send fails. Lives under the banner, above the SMTP
+   debug log block.
+   ========================================================= */
+
+.sendforce-test-detail-wrap {
+	margin-top: 12px;
+	background: #fff;
+	border: 1px solid #fecaca;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.sendforce-test-detail-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: #fef2f2;
+	color: #991b1b;
+	font-size: 13px;
+	font-weight: 600;
+	border-bottom: 1px solid #fecaca;
+}
+
+.sendforce-test-detail-header .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.sendforce-test-detail-copy {
+	margin-left: auto;
+}
+
+.sendforce-test-detail-copy .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+	margin-right: 2px;
+}
+
+.sendforce-test-detail-body {
+	margin: 0;
+	padding: 12px;
+	max-height: 320px;
+	overflow: auto;
+	font-family: SFMono-Regular, Consolas, monospace;
+	font-size: 12px;
+	color: #1d2327;
+	white-space: pre-wrap;
+	word-break: break-word;
+	background: #fff;
+}
+
+/* =========================================================
+   Email Log modal header — Copy diagnostic snapshot (1.0.30)
+   ========================================================= */
+
+.sendforce-modal-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-left: auto;
+}
+
+#sendforce-log-copy-snapshot .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+	vertical-align: text-bottom;
+	margin-right: 2px;
+}
+
+/* ========================================
+   Onboarding / Setup screen  (prefix: sendforce-ob-)
+   Namespaced away from .sendforce-setup-card, which the Dashboard tab owns.
+   ======================================== */
+.sendforce-ob{max-width:920px;}
+
+/* Hero */
+.sendforce-ob-hero{display:flex;align-items:center;gap:18px;padding:22px 24px;margin-bottom:18px;background:linear-gradient(135deg,#F0FDFA 0%,#FFFFFF 70%);border:1px solid #BBF0DD;border-radius:var(--sf-radius);}
+.sendforce-ob-hero-badge{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#1dd1a1,#0e9488);box-shadow:0 4px 12px rgba(16,185,129,.28);flex-shrink:0;}
+.sendforce-ob-hero-badge .dashicons{font-size:24px;width:24px;height:24px;color:#fff;}
+.sendforce-ob-hero-text{flex:1;min-width:0;}
+.sendforce-ob-hero-text h1{margin:0 0 4px;font-size:21px;line-height:1.25;color:#0F2E25;}
+.sendforce-ob-hero-text p{margin:0;font-size:13px;color:#4B6A61;max-width:62ch;}
+.sendforce-ob-progress{flex-shrink:0;width:132px;text-align:right;}
+.sendforce-ob-progress-count{display:block;font-size:12px;font-weight:600;color:#0f766e;margin-bottom:6px;}
+.sendforce-ob-progress-track{display:block;height:6px;border-radius:999px;background:#D7F2E8;overflow:hidden;}
+.sendforce-ob-progress-fill{display:block;height:100%;background:#1dd1a1;border-radius:999px;transition:width .3s ease;}
+
+/* Panels */
+.sendforce-ob-panel{background:var(--sf-card);border:1px solid var(--sf-border);border-radius:var(--sf-radius);box-shadow:var(--sf-shadow);padding:20px 24px;margin-bottom:16px;}
+.sendforce-ob-panel--accent{border-color:#A7F3D0;background:linear-gradient(180deg,#F6FFFC 0%,#FFFFFF 60%);}
+.sendforce-ob-panel--warn{border-color:#FDE68A;background:linear-gradient(180deg,#FFFBEB 0%,#FFFFFF 60%);}
+.sendforce-ob-panel-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+.sendforce-ob-panel-head .dashicons{font-size:20px;width:20px;height:20px;margin-top:1px;color:#0f766e;flex-shrink:0;}
+.sendforce-ob-panel--warn .sendforce-ob-panel-head .dashicons{color:#B45309;}
+.sendforce-ob-panel-head h2{margin:0 0 3px;font-size:15px;font-weight:600;color:#1E293B;}
+.sendforce-ob-panel-head p{margin:0;font-size:13px;color:#64748B;max-width:72ch;}
+
+/* Plugin rows (import / deactivate) */
+.sendforce-ob-plugins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+.sendforce-ob-plugins > li{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;}
+.sendforce-ob-plugin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.sendforce-ob-plugin-name{font-weight:600;color:#1E293B;font-size:13px;}
+.sendforce-ob-plugins .sendforce-import-panel{margin-top:10px;}
+.sendforce-ob-note{display:flex;gap:8px;align-items:flex-start;margin:14px 0 0;font-size:12px;color:#64748B;}
+.sendforce-ob-note .dashicons{font-size:16px;width:16px;height:16px;color:#94A3B8;flex-shrink:0;}
+
+/* Steps */
+.sendforce-ob-steps{list-style:none;margin:0;padding:0;counter-reset:sfob;}
+.sendforce-ob-step{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid #F1F5F9;}
+.sendforce-ob-step:first-child{padding-top:0;}
+.sendforce-ob-step:last-child{padding-bottom:0;border-bottom:0;}
+.sendforce-ob-step-mark{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#E2E8F0;color:#475569;font-size:13px;font-weight:700;flex-shrink:0;}
+.sendforce-ob-step-icon{font-size:20px;width:20px;height:20px;color:#94A3B8;flex-shrink:0;}
+.sendforce-ob-step-text{flex:1;min-width:0;}
+.sendforce-ob-step-text h3{margin:0 0 2px;font-size:14px;font-weight:600;color:#1E293B;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sendforce-ob-step-text p{margin:0;font-size:13px;color:#64748B;}
+.sendforce-ob-step.is-done .sendforce-ob-step-mark{background:#DCFCE7;color:#15803D;}
+.sendforce-ob-step.is-done .sendforce-ob-step-mark .dashicons{font-size:18px;width:18px;height:18px;line-height:1;}
+.sendforce-ob-step.is-done .sendforce-ob-step-icon{color:#86EFAC;}
+.sendforce-ob-step.is-done .sendforce-ob-step-text h3{color:#475569;}
+.sendforce-ob-pill{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#15803D;background:#DCFCE7;border-radius:999px;padding:2px 8px;}
+
+/* Then explore */
+.sendforce-ob-next{margin:22px 0 10px;}
+.sendforce-ob-next h2{margin:0 0 10px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;}
+.sendforce-ob-next-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.sendforce-ob-next-card{display:block;background:var(--sf-card);border:1px solid var(--sf-border);border-radius:10px;padding:14px 16px;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s;}
+.sendforce-ob-next-card:hover{border-color:#A7F3D0;box-shadow:0 4px 14px rgba(16,185,129,.12);transform:translateY(-1px);}
+.sendforce-ob-next-card .dashicons{font-size:18px;width:18px;height:18px;color:#0f766e;margin-bottom:6px;display:block;}
+.sendforce-ob-next-card strong{display:block;font-size:13px;color:#1E293B;margin-bottom:2px;}
+.sendforce-ob-next-card span:not(.dashicons){display:block;font-size:12px;color:#64748B;line-height:1.45;}
+
+.sendforce-ob-skip{margin:6px 0 0;font-size:13px;}
+.sendforce-ob-skip a{color:#94A3B8;text-decoration:none;}
+.sendforce-ob-skip a:hover{color:#475569;text-decoration:underline;}
+
+@media (max-width:782px){
+	.sendforce-ob-hero{flex-wrap:wrap;}
+	.sendforce-ob-progress{width:100%;text-align:left;}
+	.sendforce-ob-step{flex-wrap:wrap;}
+	.sendforce-ob-step-text{flex-basis:calc(100% - 90px);}
+	.sendforce-ob-step .sendforce-btn{margin-left:42px;}
+}
+.sendforce-ob-result{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;margin-bottom:16px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--sf-radius);}
+.sendforce-ob-result .dashicons{color:#15803D;font-size:20px;width:20px;height:20px;flex-shrink:0;margin-top:1px;}
+.sendforce-ob-result strong{display:block;font-size:14px;color:#065F46;margin-bottom:2px;}
+.sendforce-ob-result span:not(.dashicons){display:block;font-size:13px;color:#047857;}
+.sendforce-ob-result .sendforce-ob-result-warn{color:#B45309;margin-top:2px;}
+/* Completion state — the payoff once both steps are done. */
+.sendforce-ob-complete{text-align:center;padding:28px 24px 30px;margin-bottom:18px;background:linear-gradient(180deg,#ECFDF5 0%,#FFFFFF 70%);border:1px solid #A7F3D0;border-radius:var(--sf-radius);}
+.sendforce-ob-complete .dashicons{font-size:40px;width:40px;height:40px;color:#15803D;}
+.sendforce-ob-complete h2{margin:8px 0 4px;font-size:19px;color:#065F46;}
+.sendforce-ob-complete p{margin:0 auto 16px;font-size:13px;color:#047857;max-width:56ch;}
+/* When something can be imported, that path leads — this button steps back. */
+.sendforce-ob .sendforce-conflict-import{background:#1dd1a1;border-color:#1dd1a1;color:#fff;padding:5px 14px;}
+.sendforce-ob .sendforce-conflict-import:hover{background:#17b88d;border-color:#17b88d;}

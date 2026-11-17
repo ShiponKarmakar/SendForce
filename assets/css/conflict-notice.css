@@ -1,0 +1,51 @@
+/**
+ * Conflict-detection admin notice styles.
+ * Loaded only when the notice is rendered (see SendForce_Admin::show_conflict_notice).
+ */
+/* margin-bottom + z-index are load-bearing: .sendforce-app has margin-top:-20px
+   and position:relative;z-index:1, so without bottom clearance and a higher
+   stacking level the app's topbar paints over the notice's last row. */
+.sendforce-conflict-notice{background:#fff;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;box-shadow:0 2px 12px rgba(0,0,0,.08);margin:20px 20px 24px 2px;padding:0;position:relative;z-index:2;}
+.sendforce-conflict-notice-inner{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;}
+.sendforce-conflict-icon{flex-shrink:0;color:#F59E0B;margin-top:1px;}
+.sendforce-conflict-content{flex:1;min-width:0;}
+.sendforce-conflict-title{font-weight:600;color:#1E293B;margin:0 0 8px;font-size:14px;}
+.sendforce-conflict-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;}
+.sendforce-conflict-list li{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#475569;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:7px 12px;}
+.sendforce-conflict-list li strong{color:#1E293B;}
+.sendforce-conflict-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:12px;}
+.sendforce-conflict-deactivate{color:#EF4444;font-weight:600;font-size:12px;text-decoration:none;border:1px solid #FECACA;border-radius:4px;padding:3px 10px;background:#FEF2F2;transition:background .15s;}
+.sendforce-conflict-deactivate:hover{background:#FEE2E2;color:#DC2626;}
+.sendforce-conflict-dismiss-one{background:none;border:none;cursor:pointer;color:#94A3B8;padding:2px;border-radius:4px;line-height:1;display:inline-flex;align-items:center;justify-content:center;transition:color .15s;}
+.sendforce-conflict-dismiss-one:hover{color:#475569;}
+.sendforce-conflict-close{flex-shrink:0;background:none;border:none;cursor:pointer;color:#94A3B8;padding:2px;border-radius:4px;line-height:1;transition:color .15s;align-self:flex-start;margin-top:2px;}
+.sendforce-conflict-close:hover{color:#475569;}
+/* Import from another SMTP plugin */
+.sendforce-conflict-list li{flex-wrap:wrap;}
+.sendforce-conflict-import{color:#0f766e;font-weight:600;font-size:12px;border:1px solid #99f6e4;border-radius:4px;padding:3px 10px;background:#f0fdfa;cursor:pointer;transition:background .15s;}
+.sendforce-conflict-import:hover{background:#ccfbf1;}
+.sendforce-import-panel{flex-basis:100%;margin-top:10px;padding:12px 14px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;color:#334155;}
+.sendforce-import-panel p{margin:0 0 8px;}
+.sendforce-import-items{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px;}
+.sendforce-import-items li.sendforce-import-item{display:block;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;}
+.sendforce-import-item.is-unsupported,.sendforce-import-item.is-already{opacity:.7;}
+.sendforce-import-item-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sendforce-import-badge{font-size:11px;font-weight:600;color:#0f766e;background:#ccfbf1;border-radius:9999px;padding:1px 8px;}
+.sendforce-import-badge.is-muted{color:#475569;background:#E2E8F0;}
+.sendforce-import-summary{color:#64748B;font-size:12px;margin-top:2px;}
+.sendforce-import-note{color:#92400E;font-size:12px;margin-top:4px;}
+.sendforce-import-error{color:#B91C1C;}
+.sendforce-import-done{font-weight:600;color:#065F46;}
+.sendforce-import-actions{display:flex;align-items:center;gap:10px;}
+.sendforce-import-go{display:inline-block;background:#1dd1a1;color:#fff;border:0;border-radius:4px;padding:5px 14px;font-weight:600;font-size:12px;cursor:pointer;text-decoration:none;}
+.sendforce-import-go:hover{background:#17b88d;color:#fff;}
+.sendforce-import-cancel{background:none;border:0;color:#64748B;cursor:pointer;font-size:12px;}
+/* Settings tab "Import from another plugin" card reuses the list markup. */
+.sendforce-import-card .sendforce-conflict-actions{margin-left:auto;}
+/* Already imported: the button stays available for a re-check but stops
+   competing with the actions that still need doing. */
+.sendforce-conflict-import.is-secondary{background:#F8FAFC;border-color:#CBD5E1;color:#475569;font-weight:600;}
+.sendforce-conflict-import.is-secondary:hover{background:#F1F5F9;border-color:#94A3B8;color:#1E293B;}
+.sendforce-ob .sendforce-conflict-import.is-secondary{background:#F8FAFC;border-color:#CBD5E1;color:#475569;}
+.sendforce-ob .sendforce-conflict-import.is-secondary:hover{background:#F1F5F9;border-color:#94A3B8;color:#1E293B;}
+.sendforce-ob-plugin-name .sendforce-import-badge{margin-left:8px;vertical-align:middle;}
