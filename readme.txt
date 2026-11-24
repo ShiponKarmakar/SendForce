@@ -381,6 +381,7 @@ For the **complete** release history with full detail on every change, see the [
 
 = 1.2.3 =
 * New: Import from Post SMTP, SMTP Mailer and WP SMTP (Kadence Mail): connections, credentials, sender, fallback and WP SMTP's per-sender routing, with a preview first and nothing in SendForce overwritten.
+* Fixed: A Reply-To written with a name, like `ABC Shop <shop@example.com>`, made Brevo reject the email (HTTP 400) and was sent wrongly to several other API providers. The name and address are now sent separately, and Amazon SES and Gmail encode non-English names correctly. The SMTP fallback no longer drops named recipients. Thanks to @webskipperdk for the report.
 * Fixed: Saving a new connection could create it twice if the same request reached the server twice, for example a browser retry, or clicking Save again after a "Request failed" message when the save had gone through.
 * Changed: The 1.0.x entries in this changelog are now one summary, and old upgrade notices are removed, to stay within WordPress.org's limit. The full history is in CHANGELOG.md.
 
@@ -443,7 +444,7 @@ For the **complete** release history with full detail on every change, see the [
 == Upgrade Notice ==
 
 = 1.2.3 =
-Adds import from Post SMTP, SMTP Mailer and WP SMTP, and fixes a new connection sometimes being saved twice.
+Adds import from Post SMTP, SMTP Mailer and WP SMTP. Fixes Brevo rejecting emails whose Reply-To includes a name, and a new connection sometimes being saved twice.
 
 = 1.2.2 =
 Fixes emails from plugins like Directorist showing raw HTML code when the Email Queue is on or an API provider is used. Adds a choice of Email Queue send interval.

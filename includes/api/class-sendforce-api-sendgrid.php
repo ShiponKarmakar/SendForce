@@ -27,20 +27,20 @@ class SendForce_API_Sendgrid extends SendForce_API_Mailer {
 		$personalizations = array(
 			array(
 				'to' => array_map( function ( $email ) {
-					return array( 'email' => $email );
+					return $this->addr_obj( $email );
 				}, $recipients ),
 			),
 		);
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$personalizations[0]['cc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$personalizations[0]['bcc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['bcc'] );
 		}
 
@@ -68,7 +68,7 @@ class SendForce_API_Sendgrid extends SendForce_API_Mailer {
 		);
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['reply_to'] = array( 'email' => $parsed['reply_to'] );
+			$body['reply_to'] = $this->addr_obj( $parsed['reply_to'] );
 		}
 
 		// SendGrid attachments[]: {content (base64), filename, type, disposition}.

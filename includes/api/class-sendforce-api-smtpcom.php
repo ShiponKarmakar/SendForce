@@ -30,7 +30,7 @@ class SendForce_API_SMTPcom extends SendForce_API_Mailer {
 			'channel'  => $channel,
 			'recipients' => array(
 				'to' => array_map( function ( $email ) {
-					return array( 'address' => $email );
+					return $this->addr_obj( $email, 'address', 'name' );
 				}, $recipients ),
 			),
 			'originator' => array(
@@ -57,18 +57,18 @@ class SendForce_API_SMTPcom extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$body['recipients']['cc'] = array_map( function ( $email ) {
-				return array( 'address' => $email );
+				return $this->addr_obj( $email, 'address', 'name' );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$body['recipients']['bcc'] = array_map( function ( $email ) {
-				return array( 'address' => $email );
+				return $this->addr_obj( $email, 'address', 'name' );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['originator']['reply_to'] = array( 'address' => $parsed['reply_to'] );
+			$body['originator']['reply_to'] = $this->addr_obj( $parsed['reply_to'], 'address', 'name' );
 		}
 
 		// SMTP.com attachments — added as additional body parts with

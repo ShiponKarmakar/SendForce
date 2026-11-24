@@ -33,7 +33,7 @@ class SendForce_API_Zoho extends SendForce_API_Mailer {
 				'name'    => $this->get_from_name(),
 			),
 			'to'      => array_map( function ( $email ) {
-				return array( 'email_address' => array( 'address' => $email ) );
+				return array( 'email_address' => $this->addr_obj( $email, 'address', 'name' ) );
 			}, $recipients ),
 			'subject' => $subject,
 		);
@@ -46,20 +46,18 @@ class SendForce_API_Zoho extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$body['cc'] = array_map( function ( $email ) {
-				return array( 'email_address' => array( 'address' => $email ) );
+				return array( 'email_address' => $this->addr_obj( $email, 'address', 'name' ) );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$body['bcc'] = array_map( function ( $email ) {
-				return array( 'email_address' => array( 'address' => $email ) );
+				return array( 'email_address' => $this->addr_obj( $email, 'address', 'name' ) );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['reply_to'] = array(
-				'address' => $parsed['reply_to'],
-			);
+			$body['reply_to'] = array( $this->addr_obj( $parsed['reply_to'], 'address', 'name' ) );
 		}
 
 		// Attachments. ZeptoMail takes them base64-encoded on the payload; they

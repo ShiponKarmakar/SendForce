@@ -473,7 +473,7 @@
 				nonce:           sendForce.nonce,
 				conn_id:         $( '#sf-conn-id' ).val(),
 				save_key:        sfConnSaveKey,
-				label:          $( '#sf-conn-label' ).val(),
+				label:           $( '#sf-conn-label' ).val(),
 				provider:        $( '#sf-conn-provider' ).val(),
 				connection_type: $( '#sf-conn-type' ).val(),
 				host:            $( '#sf-conn-host' ).val(),

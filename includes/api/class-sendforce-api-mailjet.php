@@ -43,7 +43,7 @@ class SendForce_API_Mailjet extends SendForce_API_Mailer {
 				'Name'  => $this->get_from_name(),
 			),
 			'To' => array_map( function ( $email ) {
-				return array( 'Email' => $email );
+				return $this->addr_obj( $email, 'Email', 'Name' );
 			}, $recipients ),
 			'Subject' => $subject,
 		);
@@ -61,18 +61,18 @@ class SendForce_API_Mailjet extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$msg['Cc'] = array_map( function ( $email ) {
-				return array( 'Email' => $email );
+				return $this->addr_obj( $email, 'Email', 'Name' );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$msg['Bcc'] = array_map( function ( $email ) {
-				return array( 'Email' => $email );
+				return $this->addr_obj( $email, 'Email', 'Name' );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$msg['ReplyTo'] = array( 'Email' => $parsed['reply_to'] );
+			$msg['ReplyTo'] = $this->addr_obj( $parsed['reply_to'], 'Email', 'Name' );
 		}
 
 		// Mailjet v3.1 Attachments[]: {ContentType, Filename, Base64Content}.

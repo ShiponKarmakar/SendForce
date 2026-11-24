@@ -30,7 +30,7 @@ class SendForce_API_Brevo extends SendForce_API_Mailer {
 				'email' => $this->get_from_email(),
 			),
 			'to'      => array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $recipients ),
 			'subject' => $subject,
 		);
@@ -63,18 +63,18 @@ class SendForce_API_Brevo extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$body['cc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$body['bcc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['replyTo'] = array( 'email' => $parsed['reply_to'] );
+			$body['replyTo'] = $this->addr_obj( $parsed['reply_to'] );
 		}
 
 		$response = $this->make_request(

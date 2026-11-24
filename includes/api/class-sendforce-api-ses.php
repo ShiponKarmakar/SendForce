@@ -69,14 +69,17 @@ class SendForce_API_SES extends SendForce_API_Mailer {
 		$datestamp = gmdate( 'Ymd' );
 
 		// Build request payload with explicit Destination for BCC support.
+		// Only the bare addresses here: this is the delivery list, the names
+		// are in the message headers, and SES wants a non-ASCII name encoded.
+		$bare        = array( $this, 'addr_email' );
 		$destination = array(
-			'ToAddresses' => $all_to,
+			'ToAddresses' => array_map( $bare, $all_to ),
 		);
 		if ( ! empty( $all_cc ) ) {
-			$destination['CcAddresses'] = $all_cc;
+			$destination['CcAddresses'] = array_map( $bare, $all_cc );
 		}
 		if ( ! empty( $all_bcc ) ) {
-			$destination['BccAddresses'] = $all_bcc;
+			$destination['BccAddresses'] = array_map( $bare, $all_bcc );
 		}
 
 		$payload = wp_json_encode(

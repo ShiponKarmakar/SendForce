@@ -606,10 +606,21 @@ class SendForce_Mailer {
 			$from_name  = ! empty( $this->settings['from_name'] ) ? $this->settings['from_name'] : get_option( 'blogname' );
 			$mailer->setFrom( $from_email, $from_name );
 
+			// PHPMailer's addAddress(), addCC(), addBCC() and addReplyTo() want
+			// the address and the name apart; given "Name <email>" they reject
+			// it without a word.
+			$split = static function ( $address ) {
+				$address = trim( (string) $address );
+				if ( preg_match( '/^(.*)<\s*([^<>]+?)\s*>\s*$/s', $address, $m ) ) {
+					return array( trim( $m[2] ), trim( trim( $m[1] ), '"' ) );
+				}
+				return array( $address, '' );
+			};
 			$recipients = is_array( $atts['to'] ) ? $atts['to'] : array_map( 'trim', explode( ',', (string) $atts['to'] ) );
 			foreach ( $recipients as $addr ) {
 				if ( $addr ) {
-					$mailer->addAddress( $addr );
+					list( $to_addr, $to_name ) = $split( $addr );
+					$mailer->addAddress( $to_addr, $to_name );
 				}
 			}
 
@@ -627,15 +638,20 @@ class SendForce_Mailer {
 				if ( 0 === stripos( trim( $h ), 'cc:' ) ) {
 					foreach ( array_map( 'trim', explode( ',', trim( substr( trim( $h ), 3 ) ) ) ) as $cc ) {
 						if ( $cc ) {
-							$mailer->addCC( $cc ); }
+							list( $addr, $name ) = $split( $cc );
+							$mailer->addCC( $addr, $name );
+						}
 					}
 				} elseif ( 0 === stripos( trim( $h ), 'bcc:' ) ) {
 					foreach ( array_map( 'trim', explode( ',', trim( substr( trim( $h ), 4 ) ) ) ) as $bcc ) {
 						if ( $bcc ) {
-							$mailer->addBCC( $bcc ); }
+							list( $addr, $name ) = $split( $bcc );
+							$mailer->addBCC( $addr, $name );
+						}
 					}
 				} elseif ( 0 === stripos( trim( $h ), 'reply-to:' ) ) {
-					$mailer->addReplyTo( trim( substr( trim( $h ), 9 ) ) );
+					list( $addr, $name ) = $split( substr( trim( $h ), 9 ) );
+					$mailer->addReplyTo( $addr, $name );
 				}
 			}
 

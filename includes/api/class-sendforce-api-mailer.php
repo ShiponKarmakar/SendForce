@@ -264,6 +264,61 @@ abstract class SendForce_API_Mailer {
 	}
 
 	/**
+	 * Split an address as wp_mail() accepts it ("Name <email>", "<email>" or
+	 * a bare "email") into its parts. JSON APIs want the address and the name
+	 * in separate fields; sending "Name <email>" as the address makes them
+	 * reject the message (Brevo: "email is not valid in replyTo").
+	 *
+	 * @param string $address Address as written in the header or $to.
+	 * @return array [ 'email' => string, 'name' => string ]
+	 */
+	protected function split_address( $address ) {
+		$address = trim( (string) $address );
+		if ( preg_match( '/^(.*)<\s*([^<>]+?)\s*>\s*$/s', $address, $m ) ) {
+			$name = trim( $m[1] );
+			if ( strlen( $name ) > 1 && '"' === $name[0] && '"' === substr( $name, -1 ) ) {
+				$name = stripcslashes( substr( $name, 1, -1 ) );
+			}
+			return array(
+				'email' => trim( $m[2] ),
+				'name'  => $name,
+			);
+		}
+		return array(
+			'email' => $address,
+			'name'  => '',
+		);
+	}
+
+	/**
+	 * Just the email part of an address.
+	 *
+	 * @param string $address Address, with or without a name.
+	 * @return string
+	 */
+	protected function addr_email( $address ) {
+		return $this->split_address( $address )['email'];
+	}
+
+	/**
+	 * An address as a JSON object for APIs that take { email, name }. The
+	 * name key is only included when the address has a name.
+	 *
+	 * @param string $address   Address, with or without a name.
+	 * @param string $email_key The API's field for the address.
+	 * @param string $name_key  The API's field for the display name.
+	 * @return array
+	 */
+	protected function addr_obj( $address, $email_key = 'email', $name_key = 'name' ) {
+		$parts = $this->split_address( $address );
+		$obj   = array( $email_key => $parts['email'] );
+		if ( '' !== $parts['name'] ) {
+			$obj[ $name_key ] = $parts['name'];
+		}
+		return $obj;
+	}
+
+	/**
 	 * Prepare attachment files into a normalized array each provider can map
 	 * to its own JSON schema. Reads each path off disk, base64-encodes it,
 	 * looks up its MIME type, and returns the safe-to-serialize structure.
@@ -486,6 +541,29 @@ abstract class SendForce_API_Mailer {
 	}
 
 	/**
+	 * An address for a raw MIME header: "Name <email>" with the name encoded
+	 * when it isn't plain ASCII (RFC 2047) and quoted when it holds
+	 * characters that would break the address list, or the bare email when
+	 * there is no name. CR/LF/NUL are stripped first.
+	 *
+	 * @param string $address Address, with or without a name.
+	 * @return string
+	 */
+	protected function mime_addr( $address ) {
+		$parts = $this->split_address( $this->header_addr( $address ) );
+		if ( '' === $parts['name'] ) {
+			return $parts['email'];
+		}
+		$name = $parts['name'];
+		if ( preg_match( '/[\x80-\xFF]/', $name ) ) {
+			$name = $this->encode_header( $name );
+		} elseif ( preg_match( '/[()<>\[\]:;@\\\\,."]/', $name ) ) {
+			$name = '"' . addcslashes( $name, '"\\' ) . '"';
+		}
+		return $name . ' <' . $parts['email'] . '>';
+	}
+
+	/**
 	 * Best-effort HTML → plain text conversion for the multipart/alternative
 	 * text/plain part. Not a full Markdown-style render — just preserves
 	 * paragraph and line-break structure so plain-text clients show
@@ -640,15 +718,16 @@ abstract class SendForce_API_Mailer {
 		$from       = $from_name ? ( $from_name . ' <' . $from_email . '>' ) : $from_email;
 
 		$headers  = 'From: ' . $from . "\r\n";
-		$headers .= 'To: ' . implode( ', ', array_map( array( $this, 'header_addr' ), (array) $args['to'] ) ) . "\r\n";
+		$addr_list = array( $this, 'mime_addr' );
+		$headers  .= 'To: ' . implode( ', ', array_map( $addr_list, (array) $args['to'] ) ) . "\r\n";
 		if ( ! empty( $args['cc'] ) ) {
-			$headers .= 'Cc: ' . implode( ', ', array_map( array( $this, 'header_addr' ), (array) $args['cc'] ) ) . "\r\n";
+			$headers .= 'Cc: ' . implode( ', ', array_map( $addr_list, (array) $args['cc'] ) ) . "\r\n";
 		}
 		if ( $args['include_bcc'] && ! empty( $args['bcc'] ) ) {
-			$headers .= 'Bcc: ' . implode( ', ', array_map( array( $this, 'header_addr' ), (array) $args['bcc'] ) ) . "\r\n";
+			$headers .= 'Bcc: ' . implode( ', ', array_map( $addr_list, (array) $args['bcc'] ) ) . "\r\n";
 		}
 		if ( ! empty( $args['reply_to'] ) ) {
-			$headers .= 'Reply-To: ' . $this->header_addr( (string) $args['reply_to'] ) . "\r\n";
+			$headers .= 'Reply-To: ' . $this->mime_addr( (string) $args['reply_to'] ) . "\r\n";
 		}
 		$headers .= 'Subject: ' . $this->encode_header( (string) $args['subject'] ) . "\r\n";
 		$headers .= "MIME-Version: 1.0\r\n";

@@ -32,7 +32,7 @@ class SendForce_API_Socketlabs extends SendForce_API_Mailer {
 
 		$msg = array(
 			'to'      => array_map( function ( $email ) {
-				return array( 'emailAddress' => $email );
+				return $this->addr_obj( $email, 'emailAddress', 'friendlyName' );
 			}, $recipients ),
 			'from'    => array(
 				'emailAddress' => $this->get_from_email(),
@@ -53,18 +53,18 @@ class SendForce_API_Socketlabs extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$msg['cc'] = array_map( function ( $email ) {
-				return array( 'emailAddress' => $email );
+				return $this->addr_obj( $email, 'emailAddress', 'friendlyName' );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$msg['bcc'] = array_map( function ( $email ) {
-				return array( 'emailAddress' => $email );
+				return $this->addr_obj( $email, 'emailAddress', 'friendlyName' );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$msg['replyTo'] = array( 'emailAddress' => $parsed['reply_to'] );
+			$msg['replyTo'] = $this->addr_obj( $parsed['reply_to'], 'emailAddress', 'friendlyName' );
 		}
 
 		// SocketLabs attachments[]: {name, contentType, content (base64)}.

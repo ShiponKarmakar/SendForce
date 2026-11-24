@@ -27,19 +27,19 @@ class SendForce_API_Pepipost extends SendForce_API_Mailer {
 
 		$personalizations = array(
 			'to' => array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $recipients ),
 		);
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$personalizations['cc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$personalizations['bcc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['bcc'] );
 		}
 
@@ -65,7 +65,7 @@ class SendForce_API_Pepipost extends SendForce_API_Mailer {
 		);
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['reply_to'] = array( 'email' => $parsed['reply_to'] );
+			$body['reply_to'] = $this->addr_obj( $parsed['reply_to'] );
 		}
 
 		// Pepipost attachments[]: {content (base64), name}.

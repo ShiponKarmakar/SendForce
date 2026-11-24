@@ -31,16 +31,13 @@ class SendForce_API_Mandrill extends SendForce_API_Mailer {
 
 		// Build recipient list with type.
 		$to_list = array_map( function ( $email ) {
-			return array(
-				'email' => $email,
-				'type'  => 'to',
-			);
+			return $this->addr_obj( $email ) + array( 'type' => 'to' );
 		}, $recipients );
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			foreach ( $parsed['cc'] as $cc ) {
 				$to_list[] = array(
-					'email' => $cc,
+					'email' => $this->addr_email( $cc ),
 					'type'  => 'cc',
 				);
 			}
@@ -49,7 +46,7 @@ class SendForce_API_Mandrill extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['bcc'] ) ) {
 			foreach ( $parsed['bcc'] as $bcc ) {
 				$to_list[] = array(
-					'email' => $bcc,
+					'email' => $this->addr_email( $bcc ),
 					'type'  => 'bcc',
 				);
 			}

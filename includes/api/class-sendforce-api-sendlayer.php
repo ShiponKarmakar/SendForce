@@ -33,7 +33,7 @@ class SendForce_API_Sendlayer extends SendForce_API_Mailer {
 				'name'  => $this->get_from_name(),
 			),
 			'To'      => array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $recipients ),
 			'Subject' => $subject,
 		);
@@ -69,18 +69,18 @@ class SendForce_API_Sendlayer extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$body['CC'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$body['BCC'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['ReplyTo'] = array( 'email' => $parsed['reply_to'] );
+			$body['ReplyTo'] = $this->addr_obj( $parsed['reply_to'] );
 		}
 
 		$response = $this->make_request(

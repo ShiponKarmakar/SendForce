@@ -26,7 +26,7 @@ class SendForce_API_Sparkpost extends SendForce_API_Mailer {
 		$recipients = $this->normalize_to( $to );
 
 		$address_list = array_map( function ( $email ) {
-			return array( 'address' => array( 'email' => $email ) );
+			return array( 'address' => array( 'email' => $this->addr_email( $email ) ) );
 		}, $recipients );
 
 		// CC recipients: must set header_to to primary recipient.
@@ -34,7 +34,7 @@ class SendForce_API_Sparkpost extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['cc'] ) ) {
 			foreach ( $parsed['cc'] as $cc ) {
 				$address_list[] = array(
-					'address'   => array( 'email' => $cc, 'header_to' => $recipients[0] ),
+					'address'   => array( 'email' => $this->addr_email( $cc ), 'header_to' => $this->addr_email( $recipients[0] ) ),
 				);
 				$cc_addresses[] = $cc;
 			}
@@ -44,7 +44,7 @@ class SendForce_API_Sparkpost extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['bcc'] ) ) {
 			foreach ( $parsed['bcc'] as $bcc ) {
 				$address_list[] = array(
-					'address'   => array( 'email' => $bcc, 'header_to' => $recipients[0] ),
+					'address'   => array( 'email' => $this->addr_email( $bcc ), 'header_to' => $this->addr_email( $recipients[0] ) ),
 				);
 			}
 		}

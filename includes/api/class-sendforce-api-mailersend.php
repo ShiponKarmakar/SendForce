@@ -33,7 +33,7 @@ class SendForce_API_Mailersend extends SendForce_API_Mailer {
 				'name'  => $this->get_from_name(),
 			),
 			'to'      => array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $recipients ),
 			'subject' => $subject,
 		);
@@ -50,18 +50,18 @@ class SendForce_API_Mailersend extends SendForce_API_Mailer {
 
 		if ( ! empty( $parsed['cc'] ) ) {
 			$body['cc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['cc'] );
 		}
 
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$body['bcc'] = array_map( function ( $email ) {
-				return array( 'email' => $email );
+				return $this->addr_obj( $email );
 			}, $parsed['bcc'] );
 		}
 
 		if ( ! empty( $parsed['reply_to'] ) ) {
-			$body['reply_to'] = array( 'email' => $parsed['reply_to'] );
+			$body['reply_to'] = $this->addr_obj( $parsed['reply_to'] );
 		}
 
 		// MailerSend attachments[]: {content (base64), filename, disposition}.

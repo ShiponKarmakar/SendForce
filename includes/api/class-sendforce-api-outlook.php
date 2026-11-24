@@ -111,7 +111,7 @@ class SendForce_API_Outlook extends SendForce_API_Mailer {
 			),
 			'toRecipients' => array_map(
 				function ( $email ) {
-					return array( 'emailAddress' => array( 'address' => $email ) );
+					return array( 'emailAddress' => $this->addr_obj( $email, 'address', 'name' ) );
 				},
 				$recipients
 			),
@@ -121,7 +121,7 @@ class SendForce_API_Outlook extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['cc'] ) ) {
 			$email_message['ccRecipients'] = array_map(
 				function ( $email ) {
-					return array( 'emailAddress' => array( 'address' => $email ) );
+					return array( 'emailAddress' => $this->addr_obj( $email, 'address', 'name' ) );
 				},
 				$parsed['cc']
 			);
@@ -131,7 +131,7 @@ class SendForce_API_Outlook extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['bcc'] ) ) {
 			$email_message['bccRecipients'] = array_map(
 				function ( $email ) {
-					return array( 'emailAddress' => array( 'address' => $email ) );
+					return array( 'emailAddress' => $this->addr_obj( $email, 'address', 'name' ) );
 				},
 				$parsed['bcc']
 			);
@@ -141,7 +141,7 @@ class SendForce_API_Outlook extends SendForce_API_Mailer {
 		if ( ! empty( $parsed['reply_to'] ) ) {
 			$email_message['replyTo'] = array(
 				array(
-					'emailAddress' => array( 'address' => $parsed['reply_to'] ),
+					'emailAddress' => $this->addr_obj( $parsed['reply_to'], 'address', 'name' ),
 				),
 			);
 		}
